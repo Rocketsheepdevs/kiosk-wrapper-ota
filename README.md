@@ -6,19 +6,32 @@ Served at: **https://kiosk-wrapper-ota.web.app/manifest.json**
 
 ## How updates work
 
-1. Build a new APK of `kiosk_wrapper` and upload it to `uploads.drc.zone`.
-2. Compute its SHA256:
-   - Mac/Linux: `shasum -a 256 app-release.apk`
-   - Windows PowerShell: `Get-FileHash app-release.apk -Algorithm SHA256`
-3. Edit `public/manifest.json`:
+The APK is hosted on this same Firebase site, alongside the manifest.
+
+1. Build a new APK of `kiosk_wrapper`:
+   ```bash
+   cd ../kiosk_wrapper
+   flutter build apk --release
+   ```
+2. Copy it into `public/` with a versioned filename:
+   ```bash
+   cp ../kiosk_wrapper/build/app/outputs/flutter-apk/app-release.apk \
+      public/kiosk_wrapper-1.0.1.apk
+   ```
+3. Compute its SHA256:
+   - Mac/Linux: `shasum -a 256 public/kiosk_wrapper-1.0.1.apk`
+   - Windows PowerShell: `Get-FileHash public\kiosk_wrapper-1.0.1.apk -Algorithm SHA256`
+4. Edit `public/manifest.json`:
    - bump `versionCode` (must be strictly greater than what's running on the kiosks)
    - update `versionName`, `url`, `sha256`, `notes`
-4. Deploy:
+5. Deploy:
    ```bash
    firebase deploy --only hosting
    ```
-5. Kiosks pick up the new version on their next 30-min check, or instantly via
+6. Kiosks pick up the new version on their next 30-min check, or instantly via
    the admin panel's "Check now" button.
+
+APK files are `.gitignored` — they only need to exist locally at deploy time.
 
 ## Manifest format
 

@@ -1,7 +1,7 @@
 {
   "versionCode": 1,
   "versionName": "1.0.0",
-  "url": "https://uploads.drc.zone/kiosk_wrapper-1.0.0.apk",
-  "sha256": "REPLACE_WITH_REAL_SHA256_AFTER_FIRST_BUILD",
+  "url": "https://kiosk-wrapper-ota.web.app/kiosk_wrapper-1.0.0.apk",
+  "sha256": "F80E95879367135B53AB5AB04BDF1C90A52F808555E1A2890D3DCC2DEE49A316",
   "notes": "Initial deploy"
 }
