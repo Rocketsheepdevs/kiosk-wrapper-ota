@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
   <style>
     *,*::before,*::after { box-sizing: border-box; }
     :root {
@@ -390,16 +391,88 @@ const sizeBig    = GS  + '!' + '\x11'; // 2x wide, 2x tall
 const sizeNormal = GS  + '!' + '\x00';
 
 function escPosQr(data, size = 8) {
+  // Newer ESC/POS QR command — works on Epson and many recent printers,
+  // but the MASUNG MS-FPT201P silently ignores it. Kept for completeness;
+  // the rasterized version below is what actually prints on our hardware.
   const len = data.length + 3;
   const pL = String.fromCharCode(len & 0xFF);
   const pH = String.fromCharCode((len >> 8) & 0xFF);
   return (
-    GS + '(k\x04\x00\x31\x41\x32\x00'  +    // function 165: model 2
-    GS + '(k\x03\x00\x31\x43' + String.fromCharCode(size) + // function 167: module size
-    GS + '(k\x03\x00\x31\x45\x30'      +    // function 169: error correction L
-    GS + '(k' + pL + pH + '\x31\x50\x30' + data + // function 180: store data
-    GS + '(k\x03\x00\x31\x51\x30'           // function 181: print
+    GS + '(k\x04\x00\x31\x41\x32\x00'  +
+    GS + '(k\x03\x00\x31\x43' + String.fromCharCode(size) +
+    GS + '(k\x03\x00\x31\x45\x30'      +
+    GS + '(k' + pL + pH + '\x31\x50\x30' + data +
+    GS + '(k\x03\x00\x31\x51\x30'
   );
+}
+
+// Build raster ESC/POS bytes (GS v 0) from a QR code.
+// Returns Uint8Array ready to base64 → printBytes.
+function qrRasterBytes(text, scale = 6, errorLevel = 'M') {
+  if (typeof qrcode === 'undefined') return null;
+  const qr = qrcode(0, errorLevel);   // type 0 = auto-size for content
+  qr.addData(text);
+  qr.make();
+  const modules = qr.getModuleCount();
+  const width  = modules * scale;
+  const height = modules * scale;
+  const bytesPerRow = Math.ceil(width / 8);
+  const pixels = new Uint8Array(bytesPerRow * height);
+
+  for (let y = 0; y < height; y++) {
+    const my = Math.floor(y / scale);
+    for (let x = 0; x < width; x++) {
+      const mx = Math.floor(x / scale);
+      if (qr.isDark(my, mx)) {
+        const byteIdx = y * bytesPerRow + (x >> 3);
+        const bitIdx  = 7 - (x & 7);
+        pixels[byteIdx] |= 1 << bitIdx;
+      }
+    }
+  }
+
+  const header = new Uint8Array([
+    0x1D, 0x76, 0x30, 0x00,                   // GS v 0 m (normal)
+    bytesPerRow & 0xFF, (bytesPerRow >> 8) & 0xFF,
+    height & 0xFF, (height >> 8) & 0xFF,
+  ]);
+  // Center the QR with ESC a 1 before, ESC a 0 after
+  const centerOn  = new Uint8Array([0x1B, 0x61, 0x01]);
+  const centerOff = new Uint8Array([0x1B, 0x61, 0x00]);
+
+  const out = new Uint8Array(
+    centerOn.length + header.length + pixels.length + centerOff.length,
+  );
+  let o = 0;
+  out.set(centerOn, o);  o += centerOn.length;
+  out.set(header,   o);  o += header.length;
+  out.set(pixels,   o);  o += pixels.length;
+  out.set(centerOff, o);
+  return out;
+}
+
+function bytesToBase64(arr) {
+  let bin = '';
+  for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
+  return btoa(bin);
+}
+
+async function printRasterQr(data, scale = 6) {
+  if (!window.kiosk || !window.kiosk.printBytes) {
+    append(printResult, 'ERR wrapper too old: needs printBytes (v1.0.7+)');
+    return;
+  }
+  const raster = qrRasterBytes(data, scale);
+  if (!raster) {
+    append(printResult, 'ERR qrcode-generator not loaded');
+    return;
+  }
+  try {
+    const r = await window.kiosk.printBytes(bytesToBase64(raster));
+    append(printResult, 'OK QR raster ' + JSON.stringify(r));
+  } catch (e) {
+    append(printResult, 'ERR ' + e);
+  }
 }
 
 function escPosBarcode(data) {
@@ -473,27 +546,33 @@ const TEMPLATES = {
     '',
   ].join('\n'),
 
-  // ESC/POS rich format
+  // Note: QR is printed separately via raster (printBytes) — the text
+  // template is the receipt with a placeholder so the QR slots in between.
   qr: () => {
     const ref = 'KMC-' + new Date().getFullYear() + '-' + Math.floor(Math.random()*9000+1000);
-    const qrData = `https://kaisermed.com/receipt/${ref}`;
-    return (
-      alignCtr + sizeBig + 'KAISER MEDICAL\n' + sizeNormal +
-      'Visit Receipt\n' +
-      alignLeft + hr('=') + '\n' +
-      `Patient: Juan Dela Cruz\n` +
-      `Date:    ${new Date().toISOString().slice(0,16)}\n` +
-      hr() + '\n' +
-      pad('  Consultation', '500.00') + '\n' +
-      pad('  Lab Tests',    '350.00') + '\n' +
-      hr() + '\n' +
-      boldOn + pad('  TOTAL', '850.00') + boldOff + '\n' +
-      hr('=') + '\n\n' +
-      alignCtr + escPosQr(qrData, 8) + '\n' +
-      'Scan to view receipt online\n' +
-      `Ref: ${ref}\n\n` +
-      alignLeft
-    );
+    return {
+      _multi: true,
+      qrData: `https://kaisermed.com/receipt/${ref}`,
+      qrScale: 5,
+      head: (
+        alignCtr + sizeBig + 'KAISER MEDICAL\n' + sizeNormal +
+        'Visit Receipt\n' +
+        alignLeft + hr('=') + '\n' +
+        `Patient: Juan Dela Cruz\n` +
+        `Date:    ${new Date().toISOString().slice(0,16)}\n` +
+        hr() + '\n' +
+        pad('  Consultation', '500.00') + '\n' +
+        pad('  Lab Tests',    '350.00') + '\n' +
+        hr() + '\n' +
+        boldOn + pad('  TOTAL', '850.00') + boldOff + '\n' +
+        hr('=') + '\n\n'
+      ),
+      foot: (
+        alignCtr + 'Scan to view receipt online\n' +
+        `Ref: ${ref}\n\n` +
+        alignLeft
+      ),
+    };
   },
 
   barcode: () => {
@@ -621,22 +700,33 @@ async function printText(text) {
 }
 
 document.querySelectorAll('button[data-tpl]').forEach(btn => {
-  btn.onclick = () => printText(TEMPLATES[btn.dataset.tpl]());
+  btn.onclick = async () => {
+    const tpl = TEMPLATES[btn.dataset.tpl]();
+    if (typeof tpl === 'string') {
+      printText(tpl);
+    } else if (tpl && tpl._multi) {
+      // Text header → raster QR → text footer
+      await printText(tpl.head);
+      await new Promise(r => setTimeout(r, 250));
+      await printRasterQr(tpl.qrData, tpl.qrScale || 6);
+      await new Promise(r => setTimeout(r, 250));
+      await printText(tpl.foot);
+    }
+  };
 });
 
 function printCustom() {
   printText(document.getElementById('custom-text').value);
 }
 
-function printCustomQr() {
+async function printCustomQr() {
   const data = document.getElementById('qr-data').value.trim();
   if (!data) { append(printResult, 'ERR empty QR data'); return; }
-  const out =
-    alignCtr + 'QR CODE TEST\n\n' +
-    escPosQr(data, 8) + '\n' +
-    `Data: ${data}\n\n` +
-    alignLeft;
-  printText(out);
+  await printText(alignCtr + 'QR CODE TEST\n\n' + alignLeft);
+  await new Promise(r => setTimeout(r, 200));
+  await printRasterQr(data, 6);
+  await new Promise(r => setTimeout(r, 200));
+  await printText(alignCtr + `\nData: ${data}\n\n` + alignLeft);
 }
 
 // ───────── QR ─────────
