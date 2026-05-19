@@ -1,7 +1,7 @@
 {
-  "versionCode": 2,
-  "versionName": "1.0.2",
-  "url": "https://cdn.ksrdevsolutions.com/app-release.apk",
+  "versionCode": 5,
+  "versionName": "1.0.5",
+  "url": "https://cdn.ksrdevsolutions.com/app-release-v1.0.5.apk",
   "sha256": "f80e95879367135b53ab5ab04bdf1c90a52f808555e1a2890d3dcc2dee49a316",
-  "notes": "Pinned at 1.0.2 to break OTA loop. Bump versionCode here only after building a new APK with a higher versionCode in pubspec.yaml."
+  "notes": "v1.0.5 — Persistent HOME launcher pin (kiosk now survives OTA installs without falling back to Android home). Admin exit split into three actions: Restart Kiosk, Quit to Android, Open Settings. Reliable post-install relaunch."
 }
