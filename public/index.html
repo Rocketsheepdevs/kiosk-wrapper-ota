@@ -4,6 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
   <title>Kiosk Wrapper — Hardware Test</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <style>
     *,*::before,*::after { box-sizing: border-box; }
     :root {
@@ -25,14 +29,21 @@
     }
     body {
       margin: 0;
-      font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-family: 'Poppins', -apple-system, "Segoe UI", Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
       padding: 24px;
-      font-size: 16px;
+      font-size: 15px;
       min-height: 100vh;
       -webkit-tap-highlight-color: transparent;
+      font-weight: 400;
     }
+    .icon { display: inline-flex; align-items: center; justify-content: center; }
+    .icon svg { width: 1em; height: 1em; }
+    h2 .icon { color: var(--accent); width: 18px; height: 18px; }
+    h2 .icon svg { width: 18px; height: 18px; }
+    button .icon { width: 16px; height: 16px; margin-right: 6px; }
+    button { display: inline-flex; align-items: center; }
     body::before {
       content: '';
       position: fixed;
@@ -231,7 +242,10 @@
 <body>
   <header>
     <div>
-      <h1>🧪 Kiosk Wrapper — Hardware Test</h1>
+      <h1 style="display:flex;align-items:center;gap:10px">
+        <span class="icon"><i data-lucide="flask-conical" style="width:26px;height:26px;color:var(--accent)"></i></span>
+        Kiosk Wrapper — Hardware Test
+      </h1>
       <div class="label" style="margin-top:6px">printer · camera · nfc · ota</div>
       <div style="margin-top:10px"><span id="bridge-status" class="status wait">checking bridge…</span></div>
     </div>
@@ -244,7 +258,7 @@
   <div class="grid">
 
     <section class="notes">
-      <h2>📦 Latest Release <span class="badge" id="m-version-badge">…</span></h2>
+      <h2><i data-lucide="package" class="icon"></i> Latest Release <span class="badge" id="m-version-badge">…</span></h2>
       <div class="kv" style="margin-top:6px">
         <div>Version</div><div id="m-name">…</div>
         <div>Build</div><div id="m-code">…</div>
@@ -256,7 +270,7 @@
     </section>
 
     <section>
-      <h2>🖨️ Printer <span class="badge" id="printer-width-badge">58mm · 32 chars</span></h2>
+      <h2><i data-lucide="printer" class="icon"></i> Printer <span class="badge" id="printer-width-badge">58mm · 32 chars</span></h2>
       <div class="row" style="margin-bottom:8px">
         <span class="label">Line width:</span>
         <button class="secondary" data-width="32">32 (58mm)</button>
@@ -300,7 +314,7 @@ TOTAL                              112.00
     </section>
 
     <section>
-      <h2>📷 QR / Barcode Scanner <span class="badge">camera</span></h2>
+      <h2><i data-lucide="scan-line" class="icon"></i> QR / Barcode Scanner <span class="badge">camera</span></h2>
       <p style="margin:0 0 8px;font-size:14px;color:#cbd5e1">Tap Scan, point at a QR or barcode, the value comes back here.</p>
       <div class="row">
         <button onclick="scanOnce()">Scan QR</button>
@@ -310,7 +324,7 @@ TOTAL                              112.00
     </section>
 
     <section>
-      <h2>💳 NFC / RFID Reader <span class="badge">SYC ID &amp; IC</span></h2>
+      <h2><i data-lucide="credit-card" class="icon"></i> NFC / RFID Reader <span class="badge">SYC ID &amp; IC</span></h2>
       <p style="margin:0 0 8px;font-size:14px;color:#cbd5e1">Tap a card on the reader — UID arrives automatically.</p>
       <div class="big-card-uid" id="card-uid">— waiting for tap —</div>
       <div class="row">
@@ -321,7 +335,7 @@ TOTAL                              112.00
     </section>
 
     <section>
-      <h2>ℹ️ Bridge / Env <span class="badge">diagnostic</span></h2>
+      <h2><i data-lucide="info" class="icon"></i> Bridge / Env <span class="badge">diagnostic</span></h2>
       <pre id="bridge-info">checking…</pre>
       <div class="row">
         <button class="secondary" onclick="location.reload()">Reload Page</button>
@@ -660,10 +674,15 @@ function clearCardLog() {
 }
 
 // ───────── Boot ─────────
+if (window.lucide) lucide.createIcons();
 recheckBridge();
 showInstalledVersion();
 loadManifest();
-window.addEventListener('load', () => { detectBridge(); showInstalledVersion(); });
+window.addEventListener('load', () => {
+  if (window.lucide) lucide.createIcons();
+  detectBridge();
+  showInstalledVersion();
+});
 </script>
 </body>
 </html>
