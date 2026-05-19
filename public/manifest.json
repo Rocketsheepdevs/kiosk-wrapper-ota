@@ -1,7 +1,7 @@
 {
-  "versionCode": 5,
-  "versionName": "1.0.5",
-  "url": "https://cdn.ksrdevsolutions.com/app-release-v1.0.5.apk",
-  "sha256": "fc252cb53f811edbd753af3654fa3eeaf6b49ae5aefccae1a0bfce0a26fa971d",
-  "notes": "v1.0.5 — Persistent HOME launcher pin (kiosk now survives OTA installs without falling back to Android home). Admin exit split into three actions: Restart Kiosk, Quit to Android, Open Settings. Reliable post-install relaunch."
+  "versionCode": 6,
+  "versionName": "1.0.6",
+  "url": "https://cdn.ksrdevsolutions.com/app-release-v1.0.6.apk",
+  "sha256": "bfbb17eabb34c83947096303cae181a0cfffe0b1290d0c8d33836cb83276fc32",
+  "notes": "v1.0.6 — Poppins typography across the kiosk UI. Cancellable OTA: a Cancel button on the update overlay lets you abort a stuck or slow download (so a flaky network can no longer trap the kiosk mid-update). HugeIcons replace generic Material icons in the admin panel and overlay. Carries forward v1.0.5: persistent HOME launcher pin (survives OTA installs), three admin exit actions (Restart Kiosk / Quit to Android / Open Settings), reliable post-install relaunch."
 }
