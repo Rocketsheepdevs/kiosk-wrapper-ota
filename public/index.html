@@ -6,145 +6,226 @@
   <title>Kiosk Wrapper — Hardware Test</title>
   <style>
     *,*::before,*::after { box-sizing: border-box; }
+    :root {
+      --bg:           #0a0a0f;
+      --surface:      rgba(255,255,255,0.03);
+      --surface-2:    rgba(255,255,255,0.05);
+      --ring:         rgba(255,255,255,0.07);
+      --ring-strong:  rgba(255,255,255,0.12);
+      --text:         #ffffff;
+      --text-muted:   rgba(255,255,255,0.65);
+      --text-dim:     rgba(255,255,255,0.45);
+      --primary:      #8B5CF6;
+      --primary-dark: #7C3AED;
+      --primary-soft: rgba(139,92,246,0.15);
+      --accent:       #a78bfa;
+      --ok:           #22c55e;
+      --warn:         #f59e0b;
+      --bad:          #ef4444;
+    }
     body {
       margin: 0;
       font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
-      background: linear-gradient(180deg,#0b1220,#0f172a);
-      color: #e2e8f0;
+      background: var(--bg);
+      color: var(--text);
       padding: 24px;
       font-size: 16px;
       min-height: 100vh;
+      -webkit-tap-highlight-color: transparent;
     }
-    h1 { margin: 0; font-size: 26px; }
-    h2 { margin: 0 0 12px; font-size: 17px; color: #93c5fd; display: flex; align-items: center; gap: 8px; }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(60% 50% at 90% 0%,   rgba(139,92,246,0.18), transparent 60%),
+        radial-gradient(40% 40% at 0% 100%,  rgba(124,58,237,0.15), transparent 60%);
+      pointer-events: none;
+      z-index: -1;
+    }
+    h1 { margin: 0; font-size: 26px; font-weight: 700; }
+    h2 {
+      margin: 0 0 14px;
+      font-size: 16px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+    }
     h2 .badge {
-      font-size: 11px;
-      background: #1e293b;
-      padding: 2px 8px;
+      font-size: 10px;
+      background: var(--primary-soft);
+      padding: 3px 9px;
       border-radius: 999px;
-      color: #94a3b8;
-      font-weight: 400;
-      letter-spacing: 0;
+      color: var(--accent);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
     }
     header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      border-bottom: 1px solid #334155;
-      padding-bottom: 16px;
-      margin-bottom: 16px;
+      padding-bottom: 18px;
+      margin-bottom: 18px;
       gap: 16px;
+      border-bottom: 1px solid var(--ring);
     }
     .versions {
       text-align: right;
       font-size: 13px;
-      color: #94a3b8;
+      color: var(--text-muted);
       line-height: 1.5;
     }
-    .versions strong { color: #e2e8f0; font-family: ui-monospace, monospace; }
+    .versions strong {
+      color: var(--accent);
+      font-family: ui-monospace, monospace;
+      font-weight: 600;
+    }
     .status {
       padding: 6px 12px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: 600;
       display: inline-block;
+      letter-spacing: 0.01em;
     }
-    .status.ok  { background: #064e3b; color: #6ee7b7; }
-    .status.bad { background: #7f1d1d; color: #fecaca; }
-    .status.wait { background: #422006; color: #fde68a; }
+    .status.ok   { background: rgba(34,197,94,0.12);  color: #4ade80; ring: 1px solid rgba(34,197,94,0.3); }
+    .status.bad  { background: rgba(239,68,68,0.12);  color: #f87171; }
+    .status.wait { background: rgba(245,158,11,0.12); color: #fbbf24; }
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 20px;
+      gap: 18px;
     }
     @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
     section {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--ring);
+      border-radius: 14px;
+      padding: 18px;
+      backdrop-filter: blur(8px);
     }
     section.notes {
       grid-column: 1 / -1;
-      background: linear-gradient(180deg,#0f1d3a,#1e293b);
+      background: linear-gradient(135deg, rgba(139,92,246,0.10), var(--surface));
+      border-color: rgba(139,92,246,0.25);
     }
     .notes-text {
       font-size: 14px;
-      color: #cbd5e1;
-      line-height: 1.5;
+      color: var(--text-muted);
+      line-height: 1.6;
       margin: 8px 0 0;
       white-space: pre-wrap;
     }
     button {
-      background: #2563eb;
+      background: var(--primary);
       color: white;
       border: 0;
-      border-radius: 8px;
-      padding: 10px 14px;
+      border-radius: 10px;
+      padding: 10px 16px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       margin: 3px 3px 3px 0;
+      transition: background 0.15s ease, transform 0.05s ease;
     }
-    button:hover { background: #1d4ed8; }
-    button:disabled { background: #475569; cursor: not-allowed; }
-    button.secondary { background: #475569; }
-    button.secondary:hover { background: #64748b; }
-    button.danger { background: #b91c1c; }
-    button.green { background: #047857; }
-    button.green:hover { background: #065f46; }
-    textarea {
+    button:hover { background: var(--primary-dark); }
+    button:active { transform: translateY(1px); }
+    button:disabled {
+      background: var(--surface-2);
+      color: var(--text-dim);
+      cursor: not-allowed;
+    }
+    button.secondary {
+      background: var(--surface-2);
+      color: var(--text-muted);
+      border: 1px solid var(--ring);
+    }
+    button.secondary:hover {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+    }
+    button.green {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      box-shadow: 0 4px 14px -4px rgba(139,92,246,0.4);
+    }
+    button.green:hover { filter: brightness(1.1); }
+    button.danger { background: var(--bad); }
+    textarea, input[type="text"] {
       width: 100%;
-      min-height: 110px;
-      background: #0f172a;
-      color: #e2e8f0;
-      border: 1px solid #475569;
-      border-radius: 8px;
-      padding: 10px;
+      background: rgba(0,0,0,0.4);
+      color: var(--text);
+      border: 1px solid var(--ring);
+      border-radius: 10px;
+      padding: 10px 12px;
       font-family: ui-monospace, monospace;
       font-size: 13px;
+      transition: border-color 0.15s ease;
     }
-    input[type="text"] {
-      flex: 1;
-      background: #0f172a;
-      color: #e2e8f0;
-      border: 1px solid #475569;
-      border-radius: 8px;
-      padding: 10px;
-      font-family: ui-monospace, monospace;
-      font-size: 13px;
+    textarea { min-height: 110px; resize: vertical; }
+    textarea:focus, input[type="text"]:focus {
+      outline: none;
+      border-color: var(--primary);
     }
+    input[type="text"] { flex: 1; }
     pre {
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 10px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--ring);
+      border-radius: 10px;
+      padding: 12px;
       min-height: 36px;
       max-height: 200px;
       overflow: auto;
       font-size: 11px;
-      color: #6ee7b7;
+      color: var(--accent);
       white-space: pre-wrap;
       word-break: break-all;
-      margin: 10px 0 0;
+      margin: 12px 0 0;
+      line-height: 1.5;
     }
     .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
-    .label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; }
+    .label {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
     .big-card-uid {
       font-family: ui-monospace, monospace;
       font-size: 22px;
-      font-weight: bold;
-      color: #67e8f9;
-      padding: 14px;
-      background: #0f172a;
-      border-radius: 8px;
+      font-weight: 700;
+      color: var(--accent);
+      padding: 16px;
+      background: rgba(139,92,246,0.08);
+      border: 1px solid rgba(139,92,246,0.25);
+      border-radius: 12px;
       text-align: center;
-      margin-top: 8px;
-      letter-spacing: 0.04em;
+      margin-top: 10px;
+      letter-spacing: 0.05em;
     }
-    .kv { display: grid; grid-template-columns: 110px 1fr; gap: 4px 12px; font-size: 13px; }
-    .kv > div:nth-child(odd) { color: #94a3b8; }
-    .kv > div:nth-child(even) { font-family: ui-monospace, monospace; color: #e2e8f0; word-break: break-all; }
+    .kv {
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      gap: 6px 14px;
+      font-size: 13px;
+    }
+    .kv > div:nth-child(odd) {
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+      align-self: center;
+    }
+    .kv > div:nth-child(even) {
+      font-family: ui-monospace, monospace;
+      color: var(--text);
+      word-break: break-all;
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
@@ -163,12 +244,10 @@
   <div class="grid">
 
     <section class="notes">
-      <h2>📦 OTA <span class="badge">manifest.json</span></h2>
-      <div class="kv" style="margin-top:8px">
-        <div>versionCode</div><div id="m-code">…</div>
-        <div>versionName</div><div id="m-name">…</div>
-        <div>APK URL</div><div id="m-url">…</div>
-        <div>SHA256</div><div id="m-sha">…</div>
+      <h2>📦 Latest Release <span class="badge" id="m-version-badge">…</span></h2>
+      <div class="kv" style="margin-top:6px">
+        <div>Version</div><div id="m-name">…</div>
+        <div>Build</div><div id="m-code">…</div>
       </div>
       <div style="margin-top:14px">
         <div class="label">Release notes</div>
@@ -491,11 +570,10 @@ async function loadManifest() {
   try {
     const r = await fetch('manifest.json?_=' + Date.now());
     const m = await r.json();
-    document.getElementById('m-version').textContent = `v${m.versionName} (#${m.versionCode})`;
-    document.getElementById('m-code').textContent = m.versionCode;
-    document.getElementById('m-name').textContent = m.versionName;
-    document.getElementById('m-url').textContent  = m.url;
-    document.getElementById('m-sha').textContent  = m.sha256;
+    document.getElementById('m-version').textContent  = `v${m.versionName} (#${m.versionCode})`;
+    document.getElementById('m-version-badge').textContent = `v${m.versionName} · build #${m.versionCode}`;
+    document.getElementById('m-code').textContent  = '#' + m.versionCode;
+    document.getElementById('m-name').textContent  = m.versionName;
     document.getElementById('m-notes').textContent = m.notes || '—';
   } catch (e) {
     document.getElementById('m-notes').textContent = 'failed to load manifest: ' + e;
