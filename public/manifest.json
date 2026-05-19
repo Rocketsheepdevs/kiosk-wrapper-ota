@@ -1,7 +1,7 @@
 {
   "versionCode": 2,
   "versionName": "1.0.2",
-  "url": "https://kiosk-wrapper-ota.web.app/kiosk_wrapper-1.0.2.apk",
-  "sha256": "e3c96c325167b2c0ab86a8884b4fab6c0b3f2cc94a9ca113e5904423f4594243",
+  "url": "https://cdn.ksrdevsolutions.com/app-release.apk",
+  "sha256": "f80e95879367135b53ab5ab04bdf1c90a52f808555e1a2890d3dcc2dee49a316",
   "notes": "Release 1.0.2: bug fixes and performance improvements"
 }
