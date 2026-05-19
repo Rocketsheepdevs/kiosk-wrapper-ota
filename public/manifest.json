@@ -2,6 +2,6 @@
   "versionCode": 5,
   "versionName": "1.0.5",
   "url": "https://cdn.ksrdevsolutions.com/app-release-v1.0.5.apk",
-  "sha256": "f80e95879367135b53ab5ab04bdf1c90a52f808555e1a2890d3dcc2dee49a316",
+  "sha256": "fc252cb53f811edbd753af3654fa3eeaf6b49ae5aefccae1a0bfce0a26fa971d",
   "notes": "v1.0.5 — Persistent HOME launcher pin (kiosk now survives OTA installs without falling back to Android home). Admin exit split into three actions: Restart Kiosk, Quit to Android, Open Settings. Reliable post-install relaunch."
 }

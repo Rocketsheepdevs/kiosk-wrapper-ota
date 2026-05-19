@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Kiosk Wrapper — Hardware Test</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 24px;
+      font-size: 16px;
+    }
+    h1 { margin: 0 0 4px; font-size: 28px; }
+    h2 { margin: 24px 0 12px; font-size: 18px; color: #93c5fd; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+    }
+    .status {
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .status.ok { background: #064e3b; color: #6ee7b7; }
+    .status.bad { background: #7f1d1d; color: #fecaca; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+    section {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: 0;
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 4px 4px 4px 0;
+    }
+    button:hover { background: #1d4ed8; }
+    button:disabled { background: #475569; cursor: not-allowed; }
+    button.secondary { background: #475569; }
+    button.secondary:hover { background: #64748b; }
+    button.danger { background: #b91c1c; }
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      background: #0f172a;
+      color: #e2e8f0;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 10px;
+      font-family: ui-monospace, monospace;
+      font-size: 13px;
+    }
+    pre {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 40px;
+      overflow-x: auto;
+      font-size: 12px;
+      color: #6ee7b7;
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin: 12px 0 0;
+    }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .label { font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .big-card-uid {
+      font-family: ui-monospace, monospace;
+      font-size: 24px;
+      font-weight: bold;
+      color: #67e8f9;
+      padding: 12px;
+      background: #0f172a;
+      border-radius: 8px;
+      text-align: center;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Kiosk Wrapper Test</h1>
+      <div class="label">Hardware sanity checks for printer, camera, NFC</div>
+    </div>
+    <div id="bridge-status" class="status bad">checking…</div>
+  </header>
+
+  <div class="grid">
+    <section>
+      <h2>🖨️ Printer (80mm, 48 chars/line)</h2>
+      <div class="row">
+        <button data-tpl="receipt">Sample Receipt</button>
+        <button data-tpl="queue">Queue Ticket</button>
+        <button data-tpl="pattern">Test Pattern</button>
+        <button data-tpl="multilang">Multilang / Unicode</button>
+      </div>
+      <div style="margin-top:14px">
+        <div class="label">Custom text</div>
+        <textarea id="custom-text">**KAISER MEDICAL**
+Date: 2026-05-19
+================================================
+Item                                100.00
+Tax                                  12.00
+------------------------------------------------
+TOTAL                              112.00
+================================================
+   Thank you!
+</textarea>
+        <div class="row" style="margin-top:8px">
+          <button onclick="printCustom()">Print Custom</button>
+          <button class="secondary" onclick="document.getElementById('custom-text').value=''">Clear</button>
+        </div>
+      </div>
+      <pre id="print-result">No prints yet.</pre>
+    </section>
+
+    <section>
+      <h2>📷 QR / Barcode Scanner</h2>
+      <p>Opens the camera, scan a QR code or barcode, value is returned.</p>
+      <div class="row">
+        <button onclick="scanOnce()">Scan QR</button>
+        <button class="secondary" onclick="clearQrLog()">Clear log</button>
+      </div>
+      <pre id="qr-result">No scans yet.</pre>
+    </section>
+
+    <section>
+      <h2>💳 NFC / RFID Card Reader</h2>
+      <p>Tap a card on the SYC reader. The UID will appear here automatically.</p>
+      <div class="big-card-uid" id="card-uid">— waiting for tap —</div>
+      <div class="row" style="margin-top:8px">
+        <button onclick="fetchLastCard()">Get Last Card UID</button>
+        <button class="secondary" onclick="clearCardLog()">Clear log</button>
+      </div>
+      <pre id="card-result">No cards yet.</pre>
+    </section>
+
+    <section>
+      <h2>ℹ️ Bridge Info</h2>
+      <pre id="bridge-info">checking…</pre>
+      <div class="row" style="margin-top:8px">
+        <button class="secondary" onclick="location.reload()">Reload Page</button>
+      </div>
+    </section>
+  </div>
+
+<script>
+const printResult = document.getElementById('print-result');
+const qrResult    = document.getElementById('qr-result');
+const cardResult  = document.getElementById('card-result');
+const cardUid     = document.getElementById('card-uid');
+const status      = document.getElementById('bridge-status');
+const info        = document.getElementById('bridge-info');
+
+function ts() { return new Date().toLocaleTimeString(); }
+function append(el, line) { el.textContent = `[${ts()}] ${line}\n` + (el.textContent === '' ? '' : el.textContent); }
+
+// ───────── Bridge detection ─────────
+function detectBridge() {
+  const hasKiosk = !!(window.kiosk && window.kiosk.isKiosk);
+  if (hasKiosk) {
+    status.textContent = '✓ kiosk_wrapper bridge ready';
+    status.className = 'status ok';
+  } else {
+    status.textContent = '✗ no bridge (open in kiosk_wrapper)';
+    status.className = 'status bad';
+  }
+  info.textContent = JSON.stringify({
+    isKiosk: hasKiosk,
+    userAgent: navigator.userAgent,
+    location: location.href,
+    hasFlutterBridge: !!window.flutter_inappwebview,
+  }, null, 2);
+}
+detectBridge();
+window.addEventListener('load', detectBridge);
+
+// ───────── Print templates ─────────
+const W = 48;  // chars per line on 80mm printer
+const pad = (left, right) => {
+  const space = Math.max(1, W - left.length - right.length);
+  return left + ' '.repeat(space) + right;
+};
+const center = (text) => {
+  const pad = Math.max(0, Math.floor((W - text.length) / 2));
+  return ' '.repeat(pad) + text;
+};
+const hr  = (ch = '-') => ch.repeat(W);
+
+const TEMPLATES = {
+  receipt: () => [
+    center('KAISER MEDICAL CENTER'),
+    center('Visit Receipt'),
+    hr('='),
+    `Patient: Juan Dela Cruz`,
+    `ID:      PT-00982341`,
+    `Date:    ${new Date().toISOString().replace('T',' ').slice(0,16)}`,
+    hr(),
+    pad('  Consultation Fee',  '500.00'),
+    pad('  Lab - CBC',         '350.00'),
+    pad('  Lab - Urinalysis',  '150.00'),
+    hr(),
+    pad('  TOTAL', '1,000.00'),
+    hr('='),
+    '',
+    center('Thank you for visiting'),
+    center('www.kaisermed.com'),
+    '',
+  ].join('\n'),
+
+  queue: () => {
+    const n = String(Math.floor(Math.random()*900)+100);
+    return [
+      center('YOUR QUEUE NUMBER'),
+      '',
+      center(`#${n}`),
+      '',
+      hr(),
+      center(`Issued: ${new Date().toLocaleTimeString()}`),
+      center('Please wait to be called.'),
+      hr(),
+      '',
+    ].join('\n');
+  },
+
+  pattern: () => [
+    'TEST PATTERN — 48 chars (80mm thermal)',
+    '0         1         2         3         4',
+    '0123456789012345678901234567890123456789012345678',
+    hr('-'),
+    hr('='),
+    hr('*'),
+    center('CENTERED'),
+    pad('LEFT', 'RIGHT'),
+    pad('Item with very long name that overflows', '999.99'),
+    'Long text line that fits exactly 48 chars OK?!',
+    '',
+  ].join('\n'),
+
+  multilang: () => [
+    center('UNICODE TEST'),
+    hr(),
+    'ASCII:   Hello, World!',
+    'Latin:   café résumé naïve',
+    'Spanish: ¡Hola! ¿Cómo estás?',
+    'Filipino: Magandang araw, salamat po',
+    '',
+    'If any line shows ??? above, the printer',
+    'codepage may need adjusting.',
+    '',
+  ].join('\n'),
+};
+
+async function printText(text) {
+  if (!window.kiosk) { append(printResult, 'ERR no bridge'); return; }
+  try {
+    const r = await window.kiosk.print(text);
+    append(printResult, 'OK ' + JSON.stringify(r));
+  } catch (e) {
+    append(printResult, 'ERR ' + e);
+  }
+}
+
+document.querySelectorAll('button[data-tpl]').forEach(btn => {
+  btn.onclick = () => {
+    const t = TEMPLATES[btn.dataset.tpl]();
+    printText(t);
+  };
+});
+
+function printCustom() {
+  const text = document.getElementById('custom-text').value;
+  printText(text);
+}
+
+// ───────── QR scanner ─────────
+async function scanOnce() {
+  if (!window.kiosk) { append(qrResult, 'ERR no bridge'); return; }
+  append(qrResult, 'opening camera…');
+  try {
+    const r = await window.kiosk.scanQr();
+    if (r && r.ok) {
+      append(qrResult, 'OK ' + r.value);
+    } else {
+      append(qrResult, 'cancelled');
+    }
+  } catch (e) {
+    append(qrResult, 'ERR ' + e);
+  }
+}
+function clearQrLog() { qrResult.textContent = 'cleared.'; }
+
+// ───────── NFC card reader ─────────
+window.onKioskCardScan = function(uid) {
+  cardUid.textContent = uid;
+  append(cardResult, 'CARD ' + uid);
+};
+
+async function fetchLastCard() {
+  if (!window.kiosk) { append(cardResult, 'ERR no bridge'); return; }
+  try {
+    const r = await window.kiosk.lastCard();
+    if (r && r.value) {
+      cardUid.textContent = r.value;
+      append(cardResult, 'LAST ' + r.value);
+    } else {
+      append(cardResult, 'no card scanned yet');
+    }
+  } catch (e) {
+    append(cardResult, 'ERR ' + e);
+  }
+}
+function clearCardLog() {
+  cardResult.textContent = 'cleared.';
+  cardUid.textContent = '— waiting for tap —';
+}
+</script>
+</body>
+</html>
