@@ -296,6 +296,7 @@
         <button class="green" data-tpl="qr">Receipt + QR</button>
         <button class="green" data-tpl="barcode">Receipt + Barcode</button>
         <button class="green" data-tpl="formatted">Bold + Aligned + Big</button>
+        <button class="secondary" onclick="printTestSquare()">Test Square (raster)</button>
       </div>
       <div class="label" style="margin-top:10px">Custom QR</div>
       <div class="row">
@@ -470,6 +471,66 @@ async function printRasterQr(data, scale = 6) {
   try {
     const r = await window.kiosk.printBytes(bytesToBase64(raster));
     append(printResult, 'OK QR raster ' + JSON.stringify(r));
+  } catch (e) {
+    append(printResult, 'ERR ' + e);
+  }
+}
+
+// Build a small 32×32 black square as ESC/POS raster.
+// If THIS doesn't print, the MASUNG doesn't support GS v 0 either —
+// in which case QR raster won't work either and we'd need ESC *.
+function rasterTestSquare() {
+  const W = 32;            // 32 dots wide = 4 bytes
+  const H = 32;            // 32 dots tall
+  const bytesPerRow = 4;
+  const pixels = new Uint8Array(bytesPerRow * H);
+  pixels.fill(0xFF);       // all dots dark
+  return new Uint8Array([
+    0x1B, 0x61, 0x01,                                      // ESC a 1 (center)
+    0x1D, 0x76, 0x30, 0x00,                                // GS v 0 m
+    bytesPerRow & 0xFF, (bytesPerRow >> 8) & 0xFF,
+    H & 0xFF, (H >> 8) & 0xFF,
+    ...pixels,
+    0x1B, 0x61, 0x00,                                      // ESC a 0
+  ]);
+}
+
+async function printTestSquare() {
+  if (!window.kiosk || !window.kiosk.printBytes) {
+    append(printResult, 'ERR wrapper too old: needs printBytes (v1.0.7+)');
+    return;
+  }
+  const bytes = rasterTestSquare();
+  try {
+    const r = await window.kiosk.printBytes(bytesToBase64(bytes));
+    append(printResult, 'OK test square ' + JSON.stringify(r));
+  } catch (e) {
+    append(printResult, 'ERR ' + e);
+  }
+}
+
+// Concatenate Uint8Arrays and strings (UTF-8 encoded) into one byte stream.
+function concatBytes(parts) {
+  const enc = new TextEncoder();
+  const chunks = parts.map(p => typeof p === 'string' ? enc.encode(p) : p);
+  const total = chunks.reduce((sum, c) => sum + c.length, 0);
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const c of chunks) { out.set(c, offset); offset += c.length; }
+  return out;
+}
+
+// Send a single combined ESC/POS payload (text + raster + text + …) in one call.
+// This avoids multiple init/cut wraps that drop state between segments.
+async function printCombined(parts) {
+  if (!window.kiosk || !window.kiosk.printBytes) {
+    append(printResult, 'ERR wrapper too old: needs printBytes (v1.0.7+)');
+    return;
+  }
+  const bytes = concatBytes(parts);
+  try {
+    const r = await window.kiosk.printBytes(bytesToBase64(bytes));
+    append(printResult, 'OK combined (' + bytes.length + 'B) ' + JSON.stringify(r));
   } catch (e) {
     append(printResult, 'ERR ' + e);
   }
@@ -705,12 +766,13 @@ document.querySelectorAll('button[data-tpl]').forEach(btn => {
     if (typeof tpl === 'string') {
       printText(tpl);
     } else if (tpl && tpl._multi) {
-      // Text header → raster QR → text footer
-      await printText(tpl.head);
-      await new Promise(r => setTimeout(r, 250));
-      await printRasterQr(tpl.qrData, tpl.qrScale || 6);
-      await new Promise(r => setTimeout(r, 250));
-      await printText(tpl.foot);
+      // Build text head + raster QR + text foot as ONE byte stream.
+      const raster = qrRasterBytes(tpl.qrData, tpl.qrScale || 6);
+      if (!raster) {
+        append(printResult, 'ERR qrcode-generator not loaded');
+        return;
+      }
+      await printCombined([tpl.head, raster, tpl.foot]);
     }
   };
 });
@@ -722,11 +784,13 @@ function printCustom() {
 async function printCustomQr() {
   const data = document.getElementById('qr-data').value.trim();
   if (!data) { append(printResult, 'ERR empty QR data'); return; }
-  await printText(alignCtr + 'QR CODE TEST\n\n' + alignLeft);
-  await new Promise(r => setTimeout(r, 200));
-  await printRasterQr(data, 6);
-  await new Promise(r => setTimeout(r, 200));
-  await printText(alignCtr + `\nData: ${data}\n\n` + alignLeft);
+  const raster = qrRasterBytes(data, 6);
+  if (!raster) { append(printResult, 'ERR qrcode-generator not loaded'); return; }
+  await printCombined([
+    alignCtr + 'QR CODE TEST\n\n',
+    raster,
+    alignCtr + `\nData: ${data}\n\n` + alignLeft,
+  ]);
 }
 
 // ───────── QR ─────────
