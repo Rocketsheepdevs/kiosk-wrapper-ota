@@ -1,7 +1,7 @@
 {
-  "versionCode": 6,
-  "versionName": "1.0.6",
-  "url": "https://cdn.ksrdevsolutions.com/app-release-v1.0.6.apk",
+  "versionCode": 7,
+  "versionName": "1.0.7",
+  "url": "https://cdn.ksrdevsolutions.com/app-release-v1.0.7.apk",
   "sha256": "bfbb17eabb34c83947096303cae181a0cfffe0b1290d0c8d33836cb83276fc32",
-  "notes": "v1.0.6 — Poppins typography across the kiosk UI. Cancellable OTA: a Cancel button on the update overlay lets you abort a stuck or slow download (so a flaky network can no longer trap the kiosk mid-update). HugeIcons replace generic Material icons in the admin panel and overlay. Carries forward v1.0.5: persistent HOME launcher pin (survives OTA installs), three admin exit actions (Restart Kiosk / Quit to Android / Open Settings), reliable post-install relaunch."
+  "notes": "v1.0.7 — Native QR / barcode / bitmap printing via a new printBytes channel (raster path that works on the MASUNG and other ESC/POS printers that ignore the newer GS(k QR commands). Self-relaunch after OTA install — a MY_PACKAGE_REPLACED broadcast receiver fires the new APK back into MainActivity, so the kiosk is never stranded on the Android home screen after an update. Carries forward v1.0.6: Poppins typography, cancellable OTA (abort stuck downloads), HugeIcons in admin panel and overlay, persistent HOME launcher pin, three admin exit actions (Restart / Quit / Settings)."
 }
