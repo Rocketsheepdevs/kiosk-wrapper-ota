@@ -5,64 +5,107 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
   <title>Kiosk Wrapper — Hardware Test</title>
   <style>
-    * { box-sizing: border-box; }
+    *,*::before,*::after { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
-      background: #0f172a;
+      background: linear-gradient(180deg,#0b1220,#0f172a);
       color: #e2e8f0;
       padding: 24px;
       font-size: 16px;
+      min-height: 100vh;
     }
-    h1 { margin: 0 0 4px; font-size: 28px; }
-    h2 { margin: 24px 0 12px; font-size: 18px; color: #93c5fd; }
+    h1 { margin: 0; font-size: 26px; }
+    h2 { margin: 0 0 12px; font-size: 17px; color: #93c5fd; display: flex; align-items: center; gap: 8px; }
+    h2 .badge {
+      font-size: 11px;
+      background: #1e293b;
+      padding: 2px 8px;
+      border-radius: 999px;
+      color: #94a3b8;
+      font-weight: 400;
+      letter-spacing: 0;
+    }
     header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       border-bottom: 1px solid #334155;
-      padding-bottom: 12px;
-      margin-bottom: 12px;
+      padding-bottom: 16px;
+      margin-bottom: 16px;
+      gap: 16px;
     }
+    .versions {
+      text-align: right;
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+    .versions strong { color: #e2e8f0; font-family: ui-monospace, monospace; }
     .status {
       padding: 6px 12px;
       border-radius: 999px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
+      display: inline-block;
     }
-    .status.ok { background: #064e3b; color: #6ee7b7; }
+    .status.ok  { background: #064e3b; color: #6ee7b7; }
     .status.bad { background: #7f1d1d; color: #fecaca; }
+    .status.wait { background: #422006; color: #fde68a; }
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 24px;
+      gap: 20px;
     }
-    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+    @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
     section {
       background: #1e293b;
       border: 1px solid #334155;
       border-radius: 12px;
       padding: 16px;
     }
+    section.notes {
+      grid-column: 1 / -1;
+      background: linear-gradient(180deg,#0f1d3a,#1e293b);
+    }
+    .notes-text {
+      font-size: 14px;
+      color: #cbd5e1;
+      line-height: 1.5;
+      margin: 8px 0 0;
+      white-space: pre-wrap;
+    }
     button {
       background: #2563eb;
       color: white;
       border: 0;
       border-radius: 8px;
-      padding: 12px 18px;
-      font-size: 15px;
+      padding: 10px 14px;
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      margin: 4px 4px 4px 0;
+      margin: 3px 3px 3px 0;
     }
     button:hover { background: #1d4ed8; }
     button:disabled { background: #475569; cursor: not-allowed; }
     button.secondary { background: #475569; }
     button.secondary:hover { background: #64748b; }
     button.danger { background: #b91c1c; }
+    button.green { background: #047857; }
+    button.green:hover { background: #065f46; }
     textarea {
       width: 100%;
-      min-height: 120px;
+      min-height: 110px;
+      background: #0f172a;
+      color: #e2e8f0;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 10px;
+      font-family: ui-monospace, monospace;
+      font-size: 13px;
+    }
+    input[type="text"] {
+      flex: 1;
       background: #0f172a;
       color: #e2e8f0;
       border: 1px solid #475569;
@@ -75,52 +118,86 @@
       background: #0f172a;
       border: 1px solid #334155;
       border-radius: 8px;
-      padding: 12px;
-      min-height: 40px;
-      overflow-x: auto;
-      font-size: 12px;
+      padding: 10px;
+      min-height: 36px;
+      max-height: 200px;
+      overflow: auto;
+      font-size: 11px;
       color: #6ee7b7;
       white-space: pre-wrap;
       word-break: break-all;
-      margin: 12px 0 0;
+      margin: 10px 0 0;
     }
-    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .label { font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
+    .label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; }
     .big-card-uid {
       font-family: ui-monospace, monospace;
-      font-size: 24px;
+      font-size: 22px;
       font-weight: bold;
       color: #67e8f9;
-      padding: 12px;
+      padding: 14px;
       background: #0f172a;
       border-radius: 8px;
       text-align: center;
       margin-top: 8px;
+      letter-spacing: 0.04em;
     }
+    .kv { display: grid; grid-template-columns: 110px 1fr; gap: 4px 12px; font-size: 13px; }
+    .kv > div:nth-child(odd) { color: #94a3b8; }
+    .kv > div:nth-child(even) { font-family: ui-monospace, monospace; color: #e2e8f0; word-break: break-all; }
   </style>
 </head>
 <body>
   <header>
     <div>
-      <h1>Kiosk Wrapper Test</h1>
-      <div class="label">Hardware sanity checks for printer, camera, NFC</div>
+      <h1>🧪 Kiosk Wrapper — Hardware Test</h1>
+      <div class="label" style="margin-top:6px">printer · camera · nfc · ota</div>
+      <div style="margin-top:10px"><span id="bridge-status" class="status wait">checking bridge…</span></div>
     </div>
-    <div id="bridge-status" class="status bad">checking…</div>
+    <div class="versions">
+      <div>Manifest <strong id="m-version">…</strong></div>
+      <div>Installed <strong id="i-version">…</strong></div>
+    </div>
   </header>
 
   <div class="grid">
+
+    <section class="notes">
+      <h2>📦 OTA <span class="badge">manifest.json</span></h2>
+      <div class="kv" style="margin-top:8px">
+        <div>versionCode</div><div id="m-code">…</div>
+        <div>versionName</div><div id="m-name">…</div>
+        <div>APK URL</div><div id="m-url">…</div>
+        <div>SHA256</div><div id="m-sha">…</div>
+      </div>
+      <div style="margin-top:14px">
+        <div class="label">Release notes</div>
+        <div id="m-notes" class="notes-text">…</div>
+      </div>
+    </section>
+
     <section>
-      <h2>🖨️ Printer (80mm, 48 chars/line)</h2>
+      <h2>🖨️ Printer <span class="badge">80mm · 48 chars</span></h2>
+      <div class="label">Text templates</div>
       <div class="row">
         <button data-tpl="receipt">Sample Receipt</button>
         <button data-tpl="queue">Queue Ticket</button>
         <button data-tpl="pattern">Test Pattern</button>
-        <button data-tpl="multilang">Multilang / Unicode</button>
+        <button data-tpl="multilang">Unicode</button>
       </div>
-      <div style="margin-top:14px">
-        <div class="label">Custom text</div>
-        <textarea id="custom-text">**KAISER MEDICAL**
-Date: 2026-05-19
+      <div class="label" style="margin-top:10px">ESC/POS formatted</div>
+      <div class="row">
+        <button class="green" data-tpl="qr">Receipt + QR</button>
+        <button class="green" data-tpl="barcode">Receipt + Barcode</button>
+        <button class="green" data-tpl="formatted">Bold + Aligned + Big</button>
+      </div>
+      <div class="label" style="margin-top:10px">Custom QR</div>
+      <div class="row">
+        <input type="text" id="qr-data" value="https://kiosk-wrapper-ota.web.app/" />
+        <button onclick="printCustomQr()">Print this as QR</button>
+      </div>
+      <div class="label" style="margin-top:10px">Free-form text</div>
+      <textarea id="custom-text">**KAISER MEDICAL CENTER**
 ================================================
 Item                                100.00
 Tax                                  12.00
@@ -129,17 +206,16 @@ TOTAL                              112.00
 ================================================
    Thank you!
 </textarea>
-        <div class="row" style="margin-top:8px">
-          <button onclick="printCustom()">Print Custom</button>
-          <button class="secondary" onclick="document.getElementById('custom-text').value=''">Clear</button>
-        </div>
+      <div class="row">
+        <button onclick="printCustom()">Print Custom</button>
+        <button class="secondary" onclick="document.getElementById('custom-text').value=''">Clear</button>
       </div>
       <pre id="print-result">No prints yet.</pre>
     </section>
 
     <section>
-      <h2>📷 QR / Barcode Scanner</h2>
-      <p>Opens the camera, scan a QR code or barcode, value is returned.</p>
+      <h2>📷 QR / Barcode Scanner <span class="badge">camera</span></h2>
+      <p style="margin:0 0 8px;font-size:14px;color:#cbd5e1">Tap Scan, point at a QR or barcode, the value comes back here.</p>
       <div class="row">
         <button onclick="scanOnce()">Scan QR</button>
         <button class="secondary" onclick="clearQrLog()">Clear log</button>
@@ -148,10 +224,10 @@ TOTAL                              112.00
     </section>
 
     <section>
-      <h2>💳 NFC / RFID Card Reader</h2>
-      <p>Tap a card on the SYC reader. The UID will appear here automatically.</p>
+      <h2>💳 NFC / RFID Reader <span class="badge">SYC ID &amp; IC</span></h2>
+      <p style="margin:0 0 8px;font-size:14px;color:#cbd5e1">Tap a card on the reader — UID arrives automatically.</p>
       <div class="big-card-uid" id="card-uid">— waiting for tap —</div>
-      <div class="row" style="margin-top:8px">
+      <div class="row">
         <button onclick="fetchLastCard()">Get Last Card UID</button>
         <button class="secondary" onclick="clearCardLog()">Clear log</button>
       </div>
@@ -159,15 +235,18 @@ TOTAL                              112.00
     </section>
 
     <section>
-      <h2>ℹ️ Bridge Info</h2>
+      <h2>ℹ️ Bridge / Env <span class="badge">diagnostic</span></h2>
       <pre id="bridge-info">checking…</pre>
-      <div class="row" style="margin-top:8px">
+      <div class="row">
         <button class="secondary" onclick="location.reload()">Reload Page</button>
+        <button class="secondary" onclick="window.kiosk && window.kiosk.print('Bridge smoke test\\n\\n\\n')">Quick Smoke Print</button>
       </div>
     </section>
+
   </div>
 
 <script>
+// ───────── helpers ─────────
 const printResult = document.getElementById('print-result');
 const qrResult    = document.getElementById('qr-result');
 const cardResult  = document.getElementById('card-result');
@@ -175,41 +254,50 @@ const cardUid     = document.getElementById('card-uid');
 const status      = document.getElementById('bridge-status');
 const info        = document.getElementById('bridge-info');
 
-function ts() { return new Date().toLocaleTimeString(); }
-function append(el, line) { el.textContent = `[${ts()}] ${line}\n` + (el.textContent === '' ? '' : el.textContent); }
+const W = 48; // chars per line @ 80mm
+const ts = () => new Date().toLocaleTimeString();
+const append = (el, line) => { el.textContent = `[${ts()}] ${line}\n` + el.textContent; };
+const pad = (l, r) => { const s = Math.max(1, W - l.length - r.length); return l + ' '.repeat(s) + r; };
+const center = t => { const p = Math.max(0, Math.floor((W - t.length) / 2)); return ' '.repeat(p) + t; };
+const hr = (c = '-') => c.repeat(W);
 
-// ───────── Bridge detection ─────────
-function detectBridge() {
-  const hasKiosk = !!(window.kiosk && window.kiosk.isKiosk);
-  if (hasKiosk) {
-    status.textContent = '✓ kiosk_wrapper bridge ready';
-    status.className = 'status ok';
-  } else {
-    status.textContent = '✗ no bridge (open in kiosk_wrapper)';
-    status.className = 'status bad';
-  }
-  info.textContent = JSON.stringify({
-    isKiosk: hasKiosk,
-    userAgent: navigator.userAgent,
-    location: location.href,
-    hasFlutterBridge: !!window.flutter_inappwebview,
-  }, null, 2);
+// ───────── ESC/POS command builders ─────────
+// Most ESC/POS bytes are < 0x80 so they survive UTF-8 encoding intact
+// when passed through the wrapper's text-based print bridge.
+const ESC = '\x1B', GS = '\x1D';
+const init       = ESC + '@';
+const alignLeft  = ESC + 'a' + '\x00';
+const alignCtr   = ESC + 'a' + '\x01';
+const alignRight = ESC + 'a' + '\x02';
+const boldOn     = ESC + 'E' + '\x01';
+const boldOff    = ESC + 'E' + '\x00';
+const sizeBig    = GS  + '!' + '\x11'; // 2x wide, 2x tall
+const sizeNormal = GS  + '!' + '\x00';
+
+function escPosQr(data, size = 8) {
+  const len = data.length + 3;
+  const pL = String.fromCharCode(len & 0xFF);
+  const pH = String.fromCharCode((len >> 8) & 0xFF);
+  return (
+    GS + '(k\x04\x00\x31\x41\x32\x00'  +    // function 165: model 2
+    GS + '(k\x03\x00\x31\x43' + String.fromCharCode(size) + // function 167: module size
+    GS + '(k\x03\x00\x31\x45\x30'      +    // function 169: error correction L
+    GS + '(k' + pL + pH + '\x31\x50\x30' + data + // function 180: store data
+    GS + '(k\x03\x00\x31\x51\x30'           // function 181: print
+  );
 }
-detectBridge();
-window.addEventListener('load', detectBridge);
+
+function escPosBarcode(data) {
+  // Code128 with HRI below
+  return (
+    ESC + 'H' + '\x02' +                  // HRI position: below
+    GS  + 'h' + '\x50'  +                 // bar height
+    GS  + 'w' + '\x02'  +                 // bar width
+    GS  + 'k' + '\x49' + String.fromCharCode(data.length) + data
+  );
+}
 
 // ───────── Print templates ─────────
-const W = 48;  // chars per line on 80mm printer
-const pad = (left, right) => {
-  const space = Math.max(1, W - left.length - right.length);
-  return left + ' '.repeat(space) + right;
-};
-const center = (text) => {
-  const pad = Math.max(0, Math.floor((W - text.length) / 2));
-  return ' '.repeat(pad) + text;
-};
-const hr  = (ch = '-') => ch.repeat(W);
-
 const TEMPLATES = {
   receipt: () => [
     center('KAISER MEDICAL CENTER'),
@@ -250,13 +338,10 @@ const TEMPLATES = {
     'TEST PATTERN — 48 chars (80mm thermal)',
     '0         1         2         3         4',
     '0123456789012345678901234567890123456789012345678',
-    hr('-'),
-    hr('='),
-    hr('*'),
+    hr('-'), hr('='), hr('*'),
     center('CENTERED'),
     pad('LEFT', 'RIGHT'),
     pad('Item with very long name that overflows', '999.99'),
-    'Long text line that fits exactly 48 chars OK?!',
     '',
   ].join('\n'),
 
@@ -272,8 +357,106 @@ const TEMPLATES = {
     'codepage may need adjusting.',
     '',
   ].join('\n'),
+
+  // ESC/POS rich format
+  qr: () => {
+    const ref = 'KMC-' + new Date().getFullYear() + '-' + Math.floor(Math.random()*9000+1000);
+    const qrData = `https://kaisermed.com/receipt/${ref}`;
+    return (
+      alignCtr + sizeBig + 'KAISER MEDICAL\n' + sizeNormal +
+      'Visit Receipt\n' +
+      alignLeft + hr('=') + '\n' +
+      `Patient: Juan Dela Cruz\n` +
+      `Date:    ${new Date().toISOString().slice(0,16)}\n` +
+      hr() + '\n' +
+      pad('  Consultation', '500.00') + '\n' +
+      pad('  Lab Tests',    '350.00') + '\n' +
+      hr() + '\n' +
+      boldOn + pad('  TOTAL', '850.00') + boldOff + '\n' +
+      hr('=') + '\n\n' +
+      alignCtr + escPosQr(qrData, 8) + '\n' +
+      'Scan to view receipt online\n' +
+      `Ref: ${ref}\n\n` +
+      alignLeft
+    );
+  },
+
+  barcode: () => {
+    const code = String(Date.now()).slice(-12); // 12 digit numeric
+    return (
+      alignCtr + sizeBig + 'TICKET\n' + sizeNormal +
+      'Admit One\n\n' +
+      alignLeft + hr() + '\n' +
+      `Issued:  ${new Date().toLocaleString()}\n` +
+      `Code:    ${code}\n` +
+      hr() + '\n\n' +
+      alignCtr + escPosBarcode(code) + '\n\n' +
+      'Present this barcode at the entrance.\n\n' +
+      alignLeft
+    );
+  },
+
+  formatted: () => [
+    alignCtr + sizeBig + boldOn + 'BIG BOLD TEXT' + boldOff + sizeNormal + '\n',
+    alignLeft + 'left-aligned regular text',
+    alignCtr  + 'center-aligned regular text',
+    alignRight+ 'right-aligned regular text',
+    alignLeft + boldOn + 'bold left text' + boldOff,
+    alignLeft + sizeBig + 'BIG LEFT' + sizeNormal,
+    '',
+    hr('='),
+    'normal | ' + boldOn + 'bold' + boldOff + ' | ' + sizeBig + 'BIG' + sizeNormal,
+    hr('='),
+    '',
+  ].join('\n'),
 };
 
+// ───────── Bridge detection ─────────
+function detectBridge() {
+  const has = !!(window.kiosk && window.kiosk.isKiosk);
+  if (has) {
+    status.textContent = '✓ kiosk_wrapper bridge ready';
+    status.className = 'status ok';
+  } else {
+    status.textContent = '✗ no bridge (open inside kiosk_wrapper)';
+    status.className = 'status bad';
+  }
+  info.textContent = JSON.stringify({
+    isKiosk: has,
+    hasFlutterBridge: !!window.flutter_inappwebview,
+    userAgent: navigator.userAgent,
+    location: location.href,
+    online: navigator.onLine,
+  }, null, 2);
+}
+
+// ───────── Manifest + installed version ─────────
+async function loadManifest() {
+  try {
+    const r = await fetch('manifest.json?_=' + Date.now());
+    const m = await r.json();
+    document.getElementById('m-version').textContent = `v${m.versionName} (#${m.versionCode})`;
+    document.getElementById('m-code').textContent = m.versionCode;
+    document.getElementById('m-name').textContent = m.versionName;
+    document.getElementById('m-url').textContent  = m.url;
+    document.getElementById('m-sha').textContent  = m.sha256;
+    document.getElementById('m-notes').textContent = m.notes || '—';
+  } catch (e) {
+    document.getElementById('m-notes').textContent = 'failed to load manifest: ' + e;
+  }
+}
+
+function showInstalledVersion() {
+  // The wrapper doesn't expose its versionCode to JS directly, but the
+  // userAgent often includes it. Fall back to '—' if we can't tell.
+  const m = navigator.userAgent.match(/wv\)\s*Version[^M]*Mobile/);
+  document.getElementById('i-version').textContent =
+    window.kiosk && window.kiosk.isKiosk
+      ? '(running in wrapper)'
+      : '(browser)';
+}
+
+// ───────── Print ─────────
 async function printText(text) {
   if (!window.kiosk) { append(printResult, 'ERR no bridge'); return; }
   try {
@@ -285,35 +468,39 @@ async function printText(text) {
 }
 
 document.querySelectorAll('button[data-tpl]').forEach(btn => {
-  btn.onclick = () => {
-    const t = TEMPLATES[btn.dataset.tpl]();
-    printText(t);
-  };
+  btn.onclick = () => printText(TEMPLATES[btn.dataset.tpl]());
 });
 
 function printCustom() {
-  const text = document.getElementById('custom-text').value;
-  printText(text);
+  printText(document.getElementById('custom-text').value);
 }
 
-// ───────── QR scanner ─────────
+function printCustomQr() {
+  const data = document.getElementById('qr-data').value.trim();
+  if (!data) { append(printResult, 'ERR empty QR data'); return; }
+  const out =
+    alignCtr + 'QR CODE TEST\n\n' +
+    escPosQr(data, 8) + '\n' +
+    `Data: ${data}\n\n` +
+    alignLeft;
+  printText(out);
+}
+
+// ───────── QR ─────────
 async function scanOnce() {
   if (!window.kiosk) { append(qrResult, 'ERR no bridge'); return; }
   append(qrResult, 'opening camera…');
   try {
     const r = await window.kiosk.scanQr();
-    if (r && r.ok) {
-      append(qrResult, 'OK ' + r.value);
-    } else {
-      append(qrResult, 'cancelled');
-    }
+    if (r && r.ok) append(qrResult, 'OK ' + r.value);
+    else            append(qrResult, 'cancelled');
   } catch (e) {
     append(qrResult, 'ERR ' + e);
   }
 }
 function clearQrLog() { qrResult.textContent = 'cleared.'; }
 
-// ───────── NFC card reader ─────────
+// ───────── Card ─────────
 window.onKioskCardScan = function(uid) {
   cardUid.textContent = uid;
   append(cardResult, 'CARD ' + uid);
@@ -337,6 +524,12 @@ function clearCardLog() {
   cardResult.textContent = 'cleared.';
   cardUid.textContent = '— waiting for tap —';
 }
+
+// ───────── Boot ─────────
+detectBridge();
+showInstalledVersion();
+loadManifest();
+window.addEventListener('load', () => { detectBridge(); showInstalledVersion(); });
 </script>
 </body>
 </html>
