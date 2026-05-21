@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kiosk Wrapper — Web Integration Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    *,*::before,*::after { box-sizing: border-box; }
+    :root {
+      --bg:           #f8f7fb;
+      --surface:      #ffffff;
+      --surface-2:    #f4f3f9;
+      --ring:         rgba(15,15,30,0.08);
+      --text:         #1a1430;
+      --text-muted:   #4f4a66;
+      --text-dim:     #807a93;
+      --primary:      #8B5CF6;
+      --primary-dark: #7C3AED;
+      --primary-soft: rgba(139,92,246,0.10);
+      --accent:       #6d28d9;
+      --code-bg:      #1e1b2e;
+      --code-text:    #e9e6f7;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: 'Poppins', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(50% 40% at 100% 0%, rgba(139,92,246,0.08), transparent 60%),
+        radial-gradient(40% 40% at 0% 100%, rgba(124,58,237,0.06), transparent 60%);
+      pointer-events: none;
+      z-index: -1;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      max-width: 1200px;
+      margin: 0 auto;
+      gap: 32px;
+      padding: 32px 24px;
+    }
+    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } nav.toc { position: static !important; } }
+    nav.toc {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+      font-size: 13px;
+    }
+    nav.toc .label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      font-weight: 600;
+      margin: 16px 0 6px;
+    }
+    nav.toc a {
+      display: block;
+      padding: 6px 10px;
+      color: var(--text-muted);
+      text-decoration: none;
+      border-radius: 6px;
+      transition: background 0.15s, color 0.15s;
+    }
+    nav.toc a:hover { background: var(--surface-2); color: var(--text); }
+    nav.toc a.section { font-weight: 600; color: var(--text); }
+    main { min-width: 0; }
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin: 0 0 6px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    h1 .icon svg { width: 32px; height: 32px; color: var(--primary); }
+    .subtitle { color: var(--text-muted); font-size: 16px; margin-bottom: 32px; }
+    h2 {
+      font-size: 22px;
+      font-weight: 600;
+      margin: 40px 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--ring);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h2 .icon svg { width: 22px; height: 22px; color: var(--primary); }
+    h3 { font-size: 17px; font-weight: 600; margin: 28px 0 10px; color: var(--accent); }
+    p { color: var(--text-muted); margin: 12px 0; }
+    code:not(pre code) {
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      background: var(--primary-soft);
+      color: var(--accent);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.9em;
+      font-weight: 500;
+    }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 16px;
+      border-radius: 10px;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      margin: 12px 0;
+    }
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+    }
+    .tok-key { color: #c4b5fd; }
+    .tok-str { color: #86efac; }
+    .tok-com { color: #71708a; font-style: italic; }
+    .tok-num { color: #fde68a; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--ring);
+    }
+    th {
+      background: var(--surface-2);
+      font-weight: 600;
+      color: var(--text);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    td code { font-size: 0.95em; }
+    .callout {
+      background: var(--primary-soft);
+      border-left: 3px solid var(--primary);
+      padding: 12px 16px;
+      border-radius: 0 10px 10px 0;
+      margin: 16px 0;
+      color: var(--text);
+    }
+    .callout.warn {
+      background: rgba(217,119,6,0.08);
+      border-left-color: #d97706;
+    }
+    .callout.warn strong { color: #92400e; }
+    .callout strong { color: var(--accent); }
+    .callout .icon { vertical-align: middle; margin-right: 6px; }
+    .callout .icon svg { width: 16px; height: 16px; }
+    a { color: var(--accent); }
+    .version-tag {
+      display: inline-block;
+      background: var(--primary-soft);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 6px;
+      vertical-align: middle;
+      letter-spacing: 0.02em;
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+<nav class="toc">
+  <div class="label">Quick links</div>
+  <a href="#overview" class="section">Overview</a>
+  <a href="#detect">Detect the bridge</a>
+  <a href="#helper">Drop-in JS helper</a>
+
+  <div class="label">Printer</div>
+  <a href="#print-text">Text print</a>
+  <a href="#print-format">ESC/POS formatting</a>
+  <a href="#print-qr">QR codes (raster)</a>
+  <a href="#print-bytes">Raw bytes</a>
+
+  <div class="label">Hardware events</div>
+  <a href="#card-scan">NFC card scan</a>
+  <a href="#qr-scan">Camera QR scan</a>
+
+  <div class="label">Reference</div>
+  <a href="#api">Full API</a>
+  <a href="#errors">Errors & troubleshooting</a>
+  <a href="#test-page">Test page</a>
+</nav>
+
+<main>
+
+<h1>
+  <span class="icon"><i data-lucide="book-open"></i></span>
+  Kiosk Wrapper Web Integration
+</h1>
+<div class="subtitle">
+  How a web app loaded inside <code>kiosk_wrapper</code> talks to the printer, NFC reader, and camera.
+</div>
+
+<section id="overview">
+<h2><span class="icon"><i data-lucide="layers"></i></span> Overview</h2>
+
+<p>
+  The kiosk_wrapper is a Flutter app that loads your web page in a full-screen
+  WebView and exposes a JavaScript API for the kiosk hardware:
+</p>
+<ul>
+  <li><strong>MASUNG MS-FPT201P</strong> 58&nbsp;mm thermal printer (32 chars/line)</li>
+  <li><strong>SYC ID &amp; IC</strong> USB RFID reader (acts as an HID keyboard)</li>
+  <li><strong>JSK USB camera</strong> for QR / barcode scans</li>
+</ul>
+
+<p>
+  All hardware access goes through a single global: <code>window.kiosk</code>.
+  Method calls return Promises. Push events (card taps) arrive as DOM
+  <code>CustomEvent</code>s on <code>window</code> and via an internal event bus.
+</p>
+
+<div class="callout">
+  <span class="icon"><i data-lucide="info"></i></span>
+  <strong>Minimum wrapper version</strong> — the API below requires kiosk_wrapper v1.0.8 or later. See <a href="#api">version notes</a>.
+</div>
+</section>
+
+<section id="detect">
+<h3>Detect the bridge</h3>
+<p>
+  Before calling any hardware, confirm you're actually running inside the wrapper:
+</p>
+<pre><code><span class="tok-key">if</span> (window.kiosk &amp;&amp; window.kiosk.isKiosk) {
+  <span class="tok-com">// Running inside kiosk_wrapper — hardware available</span>
+} <span class="tok-key">else</span> {
+  <span class="tok-com">// Running in a regular browser — no hardware</span>
+}</code></pre>
+</section>
+
+<section id="helper">
+<h3>Drop-in JS helper</h3>
+<p>Copy-paste at the top of your kiosk web app for the typed wrapper:</p>
+<pre><code><span class="tok-key">const</span> kiosk = {
+  ready:   () =&gt; !!(window.kiosk &amp;&amp; window.kiosk.isKiosk),
+  print:   (text) =&gt; window.kiosk.print(text),
+  printBytes: (base64) =&gt; window.kiosk.printBytes(base64),
+  scanQr:  () =&gt; window.kiosk.scanQr(),
+  lastCard:() =&gt; window.kiosk.lastCard(),
+  onCard:  (cb) =&gt; window.kiosk.on(<span class="tok-str">'card'</span>, cb),
+};</code></pre>
+</section>
+
+<section id="print-text">
+<h2><span class="icon"><i data-lucide="printer"></i></span> Text Print</h2>
+
+<p>The simplest case — call <code>window.kiosk.print(text)</code> with any string.</p>
+
+<pre><code><span class="tok-key">await</span> window.kiosk.print(
+  <span class="tok-str">"*** ORDER #1234 ***\n"</span> +
+  <span class="tok-str">"Item                100.00\n"</span> +
+  <span class="tok-str">"Tax                  12.00\n"</span> +
+  <span class="tok-str">"-------------------------------\n"</span> +
+  <span class="tok-str">"TOTAL              112.00\n"</span>
+);</code></pre>
+
+<p>The wrapper automatically wraps your text with:</p>
+<ul>
+  <li><code>ESC @</code> — printer reset / initialize</li>
+  <li>Your text in UTF-8</li>
+  <li><code>ESC d 4</code> — feed 4 lines</li>
+  <li><code>GS V B 0</code> — full cut</li>
+</ul>
+
+<div class="callout warn">
+  <span class="icon"><i data-lucide="alert-triangle"></i></span>
+  <strong>Width:</strong> the MASUNG is <strong>58&nbsp;mm</strong> = <strong>32 characters per line</strong> in the default font.
+  Lines longer than 32 chars wrap. Use the helpers below to lay out columns.
+</div>
+
+<h3>Layout helpers (32-char width)</h3>
+
+<pre><code><span class="tok-key">const</span> W = <span class="tok-num">32</span>;
+
+<span class="tok-key">function</span> pad(left, right) {
+  <span class="tok-key">const</span> gap = Math.max(<span class="tok-num">1</span>, W - left.length - right.length);
+  <span class="tok-key">return</span> left + <span class="tok-str">' '</span>.repeat(gap) + right;
+}
+
+<span class="tok-key">function</span> center(text) {
+  <span class="tok-key">const</span> p = Math.max(<span class="tok-num">0</span>, Math.floor((W - text.length) / <span class="tok-num">2</span>));
+  <span class="tok-key">return</span> <span class="tok-str">' '</span>.repeat(p) + text;
+}
+
+<span class="tok-key">const</span> hr = (ch = <span class="tok-str">'-'</span>) =&gt; ch.repeat(W);
+
+<span class="tok-key">const</span> receipt = [
+  center(<span class="tok-str">'KAISER MEDICAL'</span>),
+  hr(<span class="tok-str">'='</span>),
+  <span class="tok-str">`Date: 2026-05-21 10:30`</span>,
+  hr(),
+  pad(<span class="tok-str">'Consultation'</span>, <span class="tok-str">'500.00'</span>),
+  pad(<span class="tok-str">'Lab CBC'</span>,      <span class="tok-str">'350.00'</span>),
+  hr(),
+  pad(<span class="tok-str">'TOTAL'</span>, <span class="tok-str">'850.00'</span>),
+  hr(<span class="tok-str">'='</span>),
+  <span class="tok-str">''</span>,
+].join(<span class="tok-str">'\n'</span>);
+
+<span class="tok-key">await</span> window.kiosk.print(receipt);</code></pre>
+</section>
+
+<section id="print-format">
+<h2><span class="icon"><i data-lucide="type"></i></span> ESC/POS Formatting</h2>
+
+<p>
+  You can embed ESC/POS control bytes directly in the text. The wrapper passes
+  bytes &lt; 0x80 through unchanged, so most formatting commands work inline.
+</p>
+
+<pre><code><span class="tok-key">const</span> ESC = <span class="tok-str">'\x1B'</span>, GS = <span class="tok-str">'\x1D'</span>;
+
+<span class="tok-key">const</span> alignLeft   = ESC + <span class="tok-str">'a'</span> + <span class="tok-str">'\x00'</span>;
+<span class="tok-key">const</span> alignCenter = ESC + <span class="tok-str">'a'</span> + <span class="tok-str">'\x01'</span>;
+<span class="tok-key">const</span> alignRight  = ESC + <span class="tok-str">'a'</span> + <span class="tok-str">'\x02'</span>;
+<span class="tok-key">const</span> boldOn      = ESC + <span class="tok-str">'E'</span> + <span class="tok-str">'\x01'</span>;
+<span class="tok-key">const</span> boldOff     = ESC + <span class="tok-str">'E'</span> + <span class="tok-str">'\x00'</span>;
+<span class="tok-key">const</span> bigOn       = GS  + <span class="tok-str">'!'</span> + <span class="tok-str">'\x11'</span>;  <span class="tok-com">// 2× wide, 2× tall</span>
+<span class="tok-key">const</span> bigOff      = GS  + <span class="tok-str">'!'</span> + <span class="tok-str">'\x00'</span>;
+
+<span class="tok-key">await</span> window.kiosk.print(
+  alignCenter + bigOn + <span class="tok-str">'KAISER\n'</span> + bigOff +
+  alignLeft +
+  boldOn + <span class="tok-str">'Patient:'</span> + boldOff + <span class="tok-str">' Juan Cruz\n'</span> +
+  <span class="tok-str">'Date: 2026-05-21\n'</span>
+);</code></pre>
+
+<table>
+  <thead><tr><th>Style</th><th>Command bytes</th></tr></thead>
+  <tbody>
+    <tr><td>Left / center / right align</td><td><code>ESC a 0 / 1 / 2</code></td></tr>
+    <tr><td>Bold on / off</td><td><code>ESC E 1 / 0</code></td></tr>
+    <tr><td>Double size on / off</td><td><code>GS ! 0x11 / 0x00</code></td></tr>
+    <tr><td>Initialize / reset</td><td><code>ESC @</code> (wrapper does this for you)</td></tr>
+  </tbody>
+</table>
+</section>
+
+<section id="print-qr">
+<h2><span class="icon"><i data-lucide="qr-code"></i></span> QR Codes (Raster Bitmap)</h2>
+
+<p>
+  The MASUNG doesn't render ESC/POS QR commands (<code>GS&nbsp;( k</code>). To print QR codes,
+  generate the bitmap in JavaScript and send it via <code>printBytes</code>.
+</p>
+
+<p>Load <a href="https://github.com/kazuhikoarase/qrcode-generator">qrcode-generator</a>:</p>
+<pre><code>&lt;script src=<span class="tok-str">"https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"</span>&gt;&lt;/script&gt;</code></pre>
+
+<p>Build the raster and send:</p>
+<pre><code><span class="tok-key">function</span> qrRasterBytes(text, scale = <span class="tok-num">6</span>) {
+  <span class="tok-key">const</span> qr = qrcode(<span class="tok-num">0</span>, <span class="tok-str">'M'</span>);
+  qr.addData(text);
+  qr.make();
+  <span class="tok-key">const</span> n  = qr.getModuleCount();
+  <span class="tok-key">const</span> w  = n * scale, h = n * scale;
+  <span class="tok-key">const</span> bpr = Math.ceil(w / <span class="tok-num">8</span>);
+  <span class="tok-key">const</span> px  = <span class="tok-key">new</span> Uint8Array(bpr * h);
+  <span class="tok-key">for</span> (<span class="tok-key">let</span> y = <span class="tok-num">0</span>; y &lt; h; y++) {
+    <span class="tok-key">for</span> (<span class="tok-key">let</span> x = <span class="tok-num">0</span>; x &lt; w; x++) {
+      <span class="tok-key">if</span> (qr.isDark(Math.floor(y/scale), Math.floor(x/scale))) {
+        px[y*bpr + (x&gt;&gt;<span class="tok-num">3</span>)] |= <span class="tok-num">1</span> &lt;&lt; (<span class="tok-num">7</span> - (x &amp; <span class="tok-num">7</span>));
+      }
+    }
+  }
+  <span class="tok-key">const</span> header = <span class="tok-key">new</span> Uint8Array([
+    <span class="tok-num">0x1B</span>, <span class="tok-num">0x61</span>, <span class="tok-num">0x01</span>,                       <span class="tok-com">// ESC a 1 — center</span>
+    <span class="tok-num">0x1D</span>, <span class="tok-num">0x76</span>, <span class="tok-num">0x30</span>, <span class="tok-num">0x00</span>,                 <span class="tok-com">// GS v 0 m=normal</span>
+    bpr &amp; <span class="tok-num">0xFF</span>, (bpr &gt;&gt; <span class="tok-num">8</span>) &amp; <span class="tok-num">0xFF</span>,        <span class="tok-com">// xL xH (bytes per row)</span>
+    h   &amp; <span class="tok-num">0xFF</span>, (h   &gt;&gt; <span class="tok-num">8</span>) &amp; <span class="tok-num">0xFF</span>,        <span class="tok-com">// yL yH (height in dots)</span>
+  ]);
+  <span class="tok-key">const</span> out = <span class="tok-key">new</span> Uint8Array(header.length + px.length);
+  out.set(header, <span class="tok-num">0</span>);
+  out.set(px, header.length);
+  <span class="tok-key">return</span> out;
+}
+
+<span class="tok-key">function</span> bytesToBase64(arr) {
+  <span class="tok-key">let</span> s = <span class="tok-str">''</span>;
+  <span class="tok-key">for</span> (<span class="tok-key">let</span> i = <span class="tok-num">0</span>; i &lt; arr.length; i++) s += String.fromCharCode(arr[i]);
+  <span class="tok-key">return</span> btoa(s);
+}
+
+<span class="tok-key">const</span> raster = qrRasterBytes(<span class="tok-str">'https://kaisermed.com/r/ABC123'</span>);
+<span class="tok-key">await</span> window.kiosk.printBytes(bytesToBase64(raster));</code></pre>
+
+<div class="callout">
+  <span class="icon"><i data-lucide="info"></i></span>
+  To print <strong>text + QR + text</strong> as one receipt without intermediate cuts,
+  concatenate <em>everything</em> (text bytes + raster bytes + text bytes) into a single
+  Uint8Array, base64 it, and call <code>printBytes</code> once. Multiple
+  separate <code>print</code>/<code>printBytes</code> calls each get their own init+cut.
+</div>
+</section>
+
+<section id="print-bytes">
+<h3>Raw bytes — any ESC/POS payload</h3>
+<p>
+  <code>window.kiosk.printBytes(base64)</code> sends any byte sequence to the printer. The
+  wrapper still prepends <code>ESC @</code> and appends feed + cut, but the bytes in between
+  are passed through verbatim. Use this for barcodes, bitmaps, custom commands.
+</p>
+</section>
+
+<section id="card-scan">
+<h2><span class="icon"><i data-lucide="credit-card"></i></span> NFC Card Scans <span class="version-tag">push</span></h2>
+
+<p>
+  The SYC reader sends card UIDs to the wrapper, which forwards them to the page
+  <strong>automatically</strong>. Subscribe three ways — use whichever fits your code.
+</p>
+
+<h3>Idiomatic — DOM event listener</h3>
+<pre><code>window.addEventListener(<span class="tok-str">'kiosk:card'</span>, (e) =&gt; {
+  <span class="tok-key">const</span> uid = e.detail;
+  console.log(<span class="tok-str">'card:'</span>, uid);
+  <span class="tok-com">// look up user, log in, etc.</span>
+});</code></pre>
+
+<h3>Helper API</h3>
+<pre><code>window.kiosk.on(<span class="tok-str">'card'</span>, (uid) =&gt; {
+  console.log(<span class="tok-str">'card:'</span>, uid);
+});</code></pre>
+
+<h3>Legacy single callback (back-compat)</h3>
+<pre><code>window.onKioskCardScan = (uid) =&gt; {
+  console.log(<span class="tok-str">'card:'</span>, uid);
+};</code></pre>
+
+<h3>On-demand fetch (no callback)</h3>
+<pre><code><span class="tok-key">const</span> { value } = <span class="tok-key">await</span> window.kiosk.lastCard();
+<span class="tok-com">// value === most recently scanned UID, or null if none yet</span></code></pre>
+
+<div class="callout">
+  <span class="icon"><i data-lucide="info"></i></span>
+  The reader detection algorithm distinguishes a card swipe from human typing by
+  measuring inter-keystroke timing (&lt; 80&nbsp;ms between keys = card burst). Card UIDs
+  are pushed only when the burst ends with Enter — typing slowly into a form
+  won't trigger card events.
+</div>
+</section>
+
+<section id="qr-scan">
+<h2><span class="icon"><i data-lucide="scan-line"></i></span> Camera QR Scan</h2>
+
+<p>One-shot — call <code>scanQr()</code>, the camera page opens, user points at a QR/barcode,
+the value comes back:</p>
+
+<pre><code><span class="tok-key">const</span> result = <span class="tok-key">await</span> window.kiosk.scanQr();
+<span class="tok-key">if</span> (result.ok) {
+  console.log(<span class="tok-str">'scanned:'</span>, result.value);
+} <span class="tok-key">else</span> <span class="tok-key">if</span> (result.cancelled) {
+  console.log(<span class="tok-str">'user cancelled'</span>);
+}</code></pre>
+
+<p>Supported formats: QR, EAN-13, Code-128, UPC, ITF, Data Matrix, Aztec, PDF417 (Google ML Kit).</p>
+</section>
+
+<section id="api">
+<h2><span class="icon"><i data-lucide="book"></i></span> Full API Reference</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Member</th>
+      <th>Signature</th>
+      <th>Returns</th>
+      <th>Since</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>isKiosk</code></td>
+      <td>boolean</td>
+      <td>true when running inside wrapper</td>
+      <td>1.0.5</td>
+    </tr>
+    <tr>
+      <td><code>print(text)</code></td>
+      <td>(string) =&gt; Promise</td>
+      <td><code>{ok, device, vid, pid, bytes}</code></td>
+      <td>1.0.5</td>
+    </tr>
+    <tr>
+      <td><code>printBytes(base64)</code></td>
+      <td>(string) =&gt; Promise</td>
+      <td><code>{ok, …}</code></td>
+      <td>1.0.7</td>
+    </tr>
+    <tr>
+      <td><code>scanQr()</code></td>
+      <td>() =&gt; Promise</td>
+      <td><code>{ok, value}</code> or <code>{ok:false, cancelled}</code></td>
+      <td>1.0.5</td>
+    </tr>
+    <tr>
+      <td><code>lastCard()</code></td>
+      <td>() =&gt; Promise</td>
+      <td><code>{value}</code></td>
+      <td>1.0.5</td>
+    </tr>
+    <tr>
+      <td><code>on(name, cb)</code></td>
+      <td>(string, fn) =&gt; void</td>
+      <td>—</td>
+      <td>1.0.8</td>
+    </tr>
+    <tr>
+      <td><code>onCard(cb)</code></td>
+      <td>(fn) =&gt; void</td>
+      <td>— (legacy)</td>
+      <td>1.0.5</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Push events</h3>
+<table>
+  <thead><tr><th>Event</th><th>Source</th><th>Payload</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>kiosk:card</code></td>
+      <td><code>window</code> (CustomEvent) — also <code>window.kiosk.on('card', …)</code></td>
+      <td><code>e.detail</code> = string UID</td>
+    </tr>
+  </tbody>
+</table>
+</section>
+
+<section id="errors">
+<h2><span class="icon"><i data-lucide="alert-circle"></i></span> Errors & Troubleshooting</h2>
+
+<table>
+  <thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>ok: false, error: "No USB devices found"</code></td>
+      <td>Printer disconnected / power off</td>
+      <td>Reseat USB cable, reboot kiosk</td>
+    </tr>
+    <tr>
+      <td><code>ok: false, error: "USB permission denied"</code></td>
+      <td>User dismissed Android USB dialog</td>
+      <td>Replug printer, tap "Allow" + "Use by default"</td>
+    </tr>
+    <tr>
+      <td>Print sends but printer ignores certain commands</td>
+      <td>MASUNG doesn't implement that ESC/POS function</td>
+      <td>Use raster (printBytes) instead</td>
+    </tr>
+    <tr>
+      <td>Text wraps unexpectedly</td>
+      <td>Line longer than 32 chars</td>
+      <td>Use <code>pad()</code>/<code>center()</code> helpers @ W=32</td>
+    </tr>
+    <tr>
+      <td>QR doesn't scan</td>
+      <td>Scale too small</td>
+      <td>Increase <code>scale</code> (try 5–7); raster width must be ≤ 384 dots</td>
+    </tr>
+    <tr>
+      <td>Card events never fire</td>
+      <td>Listener registered after the scan</td>
+      <td>Register listeners as early as possible (in <code>&lt;head&gt;</code>)</td>
+    </tr>
+  </tbody>
+</table>
+</section>
+
+<section id="test-page">
+<h2><span class="icon"><i data-lucide="flask-conical"></i></span> Live Test Page</h2>
+<p>
+  <a href="/">kiosk-wrapper-ota.web.app</a> hosts a live hardware test page — printer
+  templates, QR scanner, card reader log, OTA info. Use it to verify the wrapper
+  is healthy before debugging your own page.
+</p>
+</section>
+
+</main>
+</div>
+
+<script>
+  if (window.lucide) lucide.createIcons();
+</script>
+</body>
+</html>

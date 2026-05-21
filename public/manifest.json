@@ -1,7 +1,7 @@
 {
-  "versionCode": 7,
-  "versionName": "1.0.7",
-  "url": "https://cdn.ksrdevsolutions.com/app-release-v1.0.7.apk",
-  "sha256": "3fb33e2ac30391d64a0e712f430033c05fb8bd907f53c5145e3421f878ddfcad",
-  "notes": "v1.0.7 — Native QR / barcode / bitmap printing via a new printBytes channel (raster path that works on the MASUNG and other ESC/POS printers that ignore the newer GS(k QR commands). Self-relaunch after OTA install — a MY_PACKAGE_REPLACED broadcast receiver fires the new APK back into MainActivity, so the kiosk is never stranded on the Android home screen after an update. Carries forward v1.0.6: Poppins typography, cancellable OTA (abort stuck downloads), HugeIcons in admin panel and overlay, persistent HOME launcher pin, three admin exit actions (Restart / Quit / Settings)."
+  "versionCode": 8,
+  "versionName": "1.0.8",
+  "url": "https://cdn.ksrdevsolutions.com/app-release-v1.0.8.apk",
+  "sha256": "e66690e88d707d8337e3df83d2ffce3c62e7f43daab2a9d7f08847e10b45a25d",
+  "notes": "v1.0.8 — Native QR / barcode / bitmap printing via a new printBytes channel (raster path that works on the MASUNG and other ESC/POS printers that ignore the newer GS(k QR commands). Self-relaunch after OTA install — a MY_PACKAGE_REPLACED broadcast receiver fires the new APK back into MainActivity, so the kiosk is never stranded on the Android home screen after an update. Carries forward v1.0.6: Poppins typography, cancellable OTA (abort stuck downloads), HugeIcons in admin panel and overlay, persistent HOME launcher pin, three admin exit actions (Restart / Quit / Settings)."
 }
