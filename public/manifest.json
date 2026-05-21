@@ -1,7 +1,7 @@
 {
-  "versionCode": 13,
-  "versionName": "1.0.13",
-  "url": "https://cdn.ksrdevsolutions.com/app-release-v1.0.13.apk",
-  "sha256": "e303de34ccde5838ab515d821669aa461cfdd8c8f32853dbbed82ff29403dc2c",
-  "notes": "v1.0.13"
+  "versionCode": 18,
+  "versionName": "1.0.18",
+  "url": "https://cdn.ksrdevsolutions.com/app-release-v1.0.18.apk",
+  "sha256": "REPLACE_WITH_REAL_SHA256_AFTER_BUILD",
+  "notes": "v1.0.18 — Admin panel ergonomics: panel now centered along the bottom with up to 720px width (was anchored bottom-right at 380px), and the URL row's refresh + edit controls are now full IconButtons with proper 48dp touch targets. Verbose OTA error messages: a failed download now shows the actual file size + expected vs got SHA256, so download truncation vs wrong-content delivery is distinguishable at a glance. Carries forward v1.0.15-17: scoped TLS cert bypass for OTA endpoints (cdn.ksrdevsolutions.com, kiosk-wrapper-ota.web.app) — integrity still guaranteed by APK SHA256 verification. v1.0.14: bundled GlobalSign Root CA + GTS R1/R4 + ISRG X1 in both Android trust store and Dart SecurityContext. v1.0.11+: persistent HOME launcher pin, real-time card scan push, hidden scrollbars, native QR via printBytes raster, MY_PACKAGE_REPLACED self-relaunch, Poppins typography, cancellable OTA, HugeIcons, three admin exit actions."
 }
