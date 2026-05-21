@@ -687,28 +687,36 @@ function ensureBridge() {
   }
 }
 
-// ───────── Card-burst detection (JS fallback for old wrappers) ─────────
-// Older wrapper APKs have a broken auto-push for card scans (the Dart-side
-// callAsyncJavaScript invocation used 'arguments[0]' as a key name which
-// silently fails). BUT the same wrappers don't consume printable keystrokes,
-// so the SYC reader's keys still reach the WebView's keydown event. We
-// can replicate the wrapper's burst-detection logic here in JS and emit
-// the same events ourselves — making cards work on every wrapper version.
+// ───────── HID burst detection (cards + barcode/QR scanners) ─────────
+// SYC RFID reader AND USB HID QR/barcode scanners both type their value
+// + Enter into the focused element. Older wrapper APKs have a broken
+// auto-push, but since they don't consume printable keystrokes, the
+// keys still reach the document. We can detect bursts here and emit
+// the same events.
+//
+// To distinguish a card UID from a QR/barcode scan we look at the
+// shape of the captured string: short, pure-digit → card. Anything
+// else → scan. Two different events let the page route them correctly.
 (function() {
   const BURST_GAP_MS = 80;
   let buffer = '';
   let lastKeyAt = 0;
 
-  function emit(uid) {
-    try {
-      window.dispatchEvent(new CustomEvent('kiosk:card', { detail: uid }));
-    } catch (_) {}
-    try {
-      if (window.onKioskCardScan) window.onKioskCardScan(uid);
-    } catch (_) {}
-    try {
-      if (window.kiosk && window.kiosk._emit) window.kiosk._emit('card', uid);
-    } catch (_) {}
+  function isCardLike(s) {
+    // RFID/IC card UIDs from SYC are 8-10 digit decimal numbers.
+    // Accept 4-14 digits as a card UID for some tolerance.
+    return /^\d{4,14}$/.test(s);
+  }
+
+  function emitCard(uid) {
+    try { window.dispatchEvent(new CustomEvent('kiosk:card', { detail: uid })); } catch (_) {}
+    try { if (window.onKioskCardScan) window.onKioskCardScan(uid); } catch (_) {}
+    try { if (window.kiosk && window.kiosk._emit) window.kiosk._emit('card', uid); } catch (_) {}
+  }
+  function emitScan(value) {
+    try { window.dispatchEvent(new CustomEvent('kiosk:scan', { detail: value })); } catch (_) {}
+    try { if (window.onKioskHidScan) window.onKioskHidScan(value); } catch (_) {}
+    try { if (window.kiosk && window.kiosk._emit) window.kiosk._emit('scan', value); } catch (_) {}
   }
 
   document.addEventListener('keydown', function(e) {
@@ -720,16 +728,16 @@ function ensureBridge() {
 
     if (e.key === 'Enter') {
       if (buffer.length > 0) {
-        const uid = buffer;
+        const v = buffer;
         buffer = '';
-        emit(uid);
+        if (isCardLike(v)) emitCard(v);
+        else                emitScan(v);
         // Swallow the Enter so the page doesn't submit a form unintentionally
         e.preventDefault();
         e.stopPropagation();
       }
       return;
     }
-    // Only printable single chars count as part of the card burst
     if (e.key && e.key.length === 1) {
       buffer += e.key;
     }
@@ -856,6 +864,14 @@ async function scanOnce() {
   }
 }
 function clearQrLog() { qrResult.textContent = 'cleared.'; }
+
+// ───────── HID barcode/QR scanner push (kiosk:scan) ─────────
+// Some kiosks have a USB barcode/QR scanner that types via HID. Our burst
+// detector emits 'kiosk:scan' for any non-card-shaped value, route those
+// into the QR Scanner card so they don't pollute the NFC card log.
+window.addEventListener('kiosk:scan', (e) => {
+  append(qrResult, 'HID-SCAN ' + e.detail);
+});
 
 // ───────── Card ─────────
 window.onKioskCardScan = function(uid) {
