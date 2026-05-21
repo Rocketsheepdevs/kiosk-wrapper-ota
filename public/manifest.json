@@ -1,7 +1,7 @@
 {
-  "versionCode": 8,
-  "versionName": "1.0.8",
+  "versionCode": 9,
+  "versionName": "1.0.9",
   "url": "https://cdn.ksrdevsolutions.com/app-release-v1.0.8.apk",
   "sha256": "e66690e88d707d8337e3df83d2ffce3c62e7f43daab2a9d7f08847e10b45a25d",
-  "notes": "v1.0.8 — Native QR / barcode / bitmap printing via a new printBytes channel (raster path that works on the MASUNG and other ESC/POS printers that ignore the newer GS(k QR commands). Self-relaunch after OTA install — a MY_PACKAGE_REPLACED broadcast receiver fires the new APK back into MainActivity, so the kiosk is never stranded on the Android home screen after an update. Carries forward v1.0.6: Poppins typography, cancellable OTA (abort stuck downloads), HugeIcons in admin panel and overlay, persistent HOME launcher pin, three admin exit actions (Restart / Quit / Settings)."
+  "notes": "v1.0.9 — Real-time card scan push: SYC card taps now reach the web instantly via a window 'kiosk:card' CustomEvent, window.kiosk.on('card', cb), and the legacy window.onKioskCardScan callback (no more button press needed). WebView scrollbars hidden (native flags + CSS injection on every page) so the kiosk reads cleanly under any web app. New integration docs at /docs.html covering print, ESC/POS formatting, raster QR, card events, full API, and troubleshooting. Carries forward: native QR via printBytes raster path (works around MASUNG ignoring GS(k), self-relaunch after OTA install (MY_PACKAGE_REPLACED receiver), Poppins typography, cancellable OTA, HugeIcons, persistent HOME launcher pin, three admin exit actions."
 }
