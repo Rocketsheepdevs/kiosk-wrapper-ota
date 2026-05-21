@@ -687,6 +687,55 @@ function ensureBridge() {
   }
 }
 
+// ───────── Card-burst detection (JS fallback for old wrappers) ─────────
+// Older wrapper APKs have a broken auto-push for card scans (the Dart-side
+// callAsyncJavaScript invocation used 'arguments[0]' as a key name which
+// silently fails). BUT the same wrappers don't consume printable keystrokes,
+// so the SYC reader's keys still reach the WebView's keydown event. We
+// can replicate the wrapper's burst-detection logic here in JS and emit
+// the same events ourselves — making cards work on every wrapper version.
+(function() {
+  const BURST_GAP_MS = 80;
+  let buffer = '';
+  let lastKeyAt = 0;
+
+  function emit(uid) {
+    try {
+      window.dispatchEvent(new CustomEvent('kiosk:card', { detail: uid }));
+    } catch (_) {}
+    try {
+      if (window.onKioskCardScan) window.onKioskCardScan(uid);
+    } catch (_) {}
+    try {
+      if (window.kiosk && window.kiosk._emit) window.kiosk._emit('card', uid);
+    } catch (_) {}
+  }
+
+  document.addEventListener('keydown', function(e) {
+    const now = performance.now();
+    if (now - lastKeyAt > BURST_GAP_MS && buffer.length > 0) {
+      buffer = '';
+    }
+    lastKeyAt = now;
+
+    if (e.key === 'Enter') {
+      if (buffer.length > 0) {
+        const uid = buffer;
+        buffer = '';
+        emit(uid);
+        // Swallow the Enter so the page doesn't submit a form unintentionally
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      return;
+    }
+    // Only printable single chars count as part of the card burst
+    if (e.key && e.key.length === 1) {
+      buffer += e.key;
+    }
+  }, true);
+})();
+
 function detectBridge() {
   ensureBridge();
   const hasKiosk = !!(window.kiosk && window.kiosk.isKiosk);
