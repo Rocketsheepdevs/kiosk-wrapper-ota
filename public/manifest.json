@@ -1,7 +1,7 @@
 {
-  "versionCode": 9,
-  "versionName": "1.0.9",
-  "url": "https://cdn.ksrdevsolutions.com/app-release-v1.0.9.apk",
-  "sha256": "5e13d284df5954ea62b2b5fc79445f1eac7f8463c9190f0619fc4ff8ddeb36a2",
-  "notes": "v1.0.9 — Real-time card scan push: SYC card taps now reach the web instantly via a window 'kiosk:card' CustomEvent, window.kiosk.on('card', cb), and the legacy window.onKioskCardScan callback (no more button press needed). WebView scrollbars hidden (native flags + CSS injection on every page) so the kiosk reads cleanly under any web app. New integration docs at /docs.html covering print, ESC/POS formatting, raster QR, card events, full API, and troubleshooting. Carries forward: native QR via printBytes raster path (works around MASUNG ignoring GS(k), self-relaunch after OTA install (MY_PACKAGE_REPLACED receiver), Poppins typography, cancellable OTA, HugeIcons, persistent HOME launcher pin, three admin exit actions."
+  "versionCode": 11,
+  "versionName": "1.0.11",
+  "url": "https://cdn.ksrdevsolutions.com/app-release-v1.0.11.apk",
+  "sha256": "3dde92f1d52d1a6795c6d44845a54b503671cd130b5f2400e92968a1818fe714",
+  "notes": "v1.0.11 — Bundles Google Trust Services (R1, R4) + Let's Encrypt ISRG Root X1 in the APK so HTTPS to Cloudflare CDN and Firebase Hosting works on older Android versions whose system trust store predates these roots. Fixes the 'self signed certificate in certificate chain' OTA failure introduced when Firebase/Cloudflare rotated certs to GTS. Carries forward v1.0.9: real-time card scan push (kiosk:card CustomEvent + window.kiosk.on('card', cb)), hidden WebView scrollbars, integration docs at /docs.html. And v1.0.7+ features: native QR via printBytes raster path, self-relaunch after OTA install, Poppins typography, cancellable OTA, HugeIcons, persistent HOME launcher pin, three admin exit actions."
 }
