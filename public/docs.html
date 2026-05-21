@@ -202,6 +202,7 @@
 
   <div class="label">Hardware events</div>
   <a href="#card-scan">NFC card scan</a>
+  <a href="#hid-scan">USB barcode/QR scanner</a>
   <a href="#qr-scan">Camera QR scan</a>
 
   <div class="label">Reference</div>
@@ -241,7 +242,10 @@
 
 <div class="callout">
   <span class="icon"><i data-lucide="info"></i></span>
-  <strong>Minimum wrapper version</strong> — the API below requires kiosk_wrapper v1.0.8 or later. See <a href="#api">version notes</a>.
+  <strong>Recommended wrapper version</strong> — v1.0.12 or later. Earlier builds work for
+  basic features, but OTA on those versions fails after Cloudflare / Firebase rotated their
+  TLS certs to Google Trust Services (v1.0.12 ships the missing root CAs). The current API
+  surface stabilized in v1.0.8.
 </div>
 </section>
 
@@ -261,12 +265,13 @@
 <h3>Drop-in JS helper</h3>
 <p>Copy-paste at the top of your kiosk web app for the typed wrapper:</p>
 <pre><code><span class="tok-key">const</span> kiosk = {
-  ready:   () =&gt; !!(window.kiosk &amp;&amp; window.kiosk.isKiosk),
-  print:   (text) =&gt; window.kiosk.print(text),
+  ready:      () =&gt; !!(window.kiosk &amp;&amp; window.kiosk.isKiosk),
+  print:      (text)   =&gt; window.kiosk.print(text),
   printBytes: (base64) =&gt; window.kiosk.printBytes(base64),
-  scanQr:  () =&gt; window.kiosk.scanQr(),
-  lastCard:() =&gt; window.kiosk.lastCard(),
-  onCard:  (cb) =&gt; window.kiosk.on(<span class="tok-str">'card'</span>, cb),
+  scanQr:     ()       =&gt; window.kiosk.scanQr(),
+  lastCard:   ()       =&gt; window.kiosk.lastCard(),
+  onCard:     (cb)     =&gt; window.kiosk.on(<span class="tok-str">'card'</span>, cb),     <span class="tok-com">// RFID/IC card</span>
+  onScan:     (cb)     =&gt; window.kiosk.on(<span class="tok-str">'scan'</span>, cb),     <span class="tok-com">// USB HID barcode/QR</span>
 };</code></pre>
 </section>
 
@@ -469,6 +474,48 @@
 </div>
 </section>
 
+<section id="hid-scan">
+<h2><span class="icon"><i data-lucide="scan-barcode"></i></span> USB Barcode / QR Scanner <span class="version-tag">push</span></h2>
+
+<p>
+  A USB HID barcode/QR scanner (if your kiosk has one) sends decoded values
+  the same way the SYC RFID reader does — as keystrokes ending in Enter. The
+  wrapper distinguishes the two by the shape of the value:
+</p>
+
+<table>
+  <thead><tr><th>Shape</th><th>Event</th></tr></thead>
+  <tbody>
+    <tr><td>4–14 pure digits (e.g. <code>"0008762341"</code>)</td><td><code>kiosk:card</code></td></tr>
+    <tr><td>Anything else (URL, alphanumeric, longer barcodes)</td><td><code>kiosk:scan</code></td></tr>
+  </tbody>
+</table>
+
+<h3>Subscribe</h3>
+<pre><code>window.addEventListener(<span class="tok-str">'kiosk:scan'</span>, (e) =&gt; {
+  <span class="tok-key">const</span> value = e.detail;
+  console.log(<span class="tok-str">'scanned:'</span>, value);
+  <span class="tok-com">// look up ticket / voucher / inventory item</span>
+});</code></pre>
+
+<h3>Helper API</h3>
+<pre><code>window.kiosk.on(<span class="tok-str">'scan'</span>, (value) =&gt; {
+  console.log(<span class="tok-str">'scanned:'</span>, value);
+});</code></pre>
+
+<h3>Legacy single callback</h3>
+<pre><code>window.onKioskHidScan = (value) =&gt; {
+  console.log(<span class="tok-str">'scanned:'</span>, value);
+};</code></pre>
+
+<div class="callout">
+  <span class="icon"><i data-lucide="info"></i></span>
+  <strong>No camera involved</strong> — this is a USB device, the scanner has its own
+  laser/imager. Doesn't require Google Play Services or any ML Kit dependency.
+  If your kiosk has a hardware scanner, prefer this over the camera scan below.
+</div>
+</section>
+
 <section id="qr-scan">
 <h2><span class="icon"><i data-lucide="scan-line"></i></span> Camera QR Scan</h2>
 
@@ -483,6 +530,16 @@ the value comes back:</p>
 }</code></pre>
 
 <p>Supported formats: QR, EAN-13, Code-128, UPC, ITF, Data Matrix, Aztec, PDF417 (Google ML Kit).</p>
+
+<div class="callout warn">
+  <span class="icon"><i data-lucide="alert-triangle"></i></span>
+  <strong>Requires Google Play Services.</strong> The camera scanner uses Google ML Kit which
+  depends on Play Services on Android. Industrial / kiosk Android builds (including most
+  MTSTAR units) ship without Play Services — the camera page will open but show a black
+  screen with a warning icon. If your kiosk has a USB HID barcode scanner, use the
+  <a href="#hid-scan">HID scanner events</a> above instead. Future wrapper versions may
+  switch to a bundled ZXing decoder so this works without Play Services.
+</div>
 </section>
 
 <section id="api">
@@ -530,7 +587,7 @@ the value comes back:</p>
     </tr>
     <tr>
       <td><code>on(name, cb)</code></td>
-      <td>(string, fn) =&gt; void</td>
+      <td>(<code>'card'</code> | <code>'scan'</code>, fn) =&gt; void</td>
       <td>—</td>
       <td>1.0.8</td>
     </tr>
@@ -545,12 +602,19 @@ the value comes back:</p>
 
 <h3>Push events</h3>
 <table>
-  <thead><tr><th>Event</th><th>Source</th><th>Payload</th></tr></thead>
+  <thead><tr><th>Event</th><th>Source</th><th>Payload</th><th>When</th></tr></thead>
   <tbody>
     <tr>
       <td><code>kiosk:card</code></td>
-      <td><code>window</code> (CustomEvent) — also <code>window.kiosk.on('card', …)</code></td>
+      <td><code>window</code> CustomEvent · <code>window.kiosk.on('card', …)</code> · <code>window.onKioskCardScan</code></td>
       <td><code>e.detail</code> = string UID</td>
+      <td>HID burst is 4–14 pure digits (RFID/IC card)</td>
+    </tr>
+    <tr>
+      <td><code>kiosk:scan</code></td>
+      <td><code>window</code> CustomEvent · <code>window.kiosk.on('scan', …)</code> · <code>window.onKioskHidScan</code></td>
+      <td><code>e.detail</code> = string value</td>
+      <td>HID burst is anything else (URL, alphanumeric, longer barcode)</td>
     </tr>
   </tbody>
 </table>
@@ -591,6 +655,21 @@ the value comes back:</p>
       <td>Card events never fire</td>
       <td>Listener registered after the scan</td>
       <td>Register listeners as early as possible (in <code>&lt;head&gt;</code>)</td>
+    </tr>
+    <tr>
+      <td>QR codes from the USB scanner show up in the card listener</td>
+      <td>HID barcode scanner output is being treated as a card UID</td>
+      <td>Wrapper distinguishes by content shape (4–14 digits = card). Longer / alphanumeric values fire <code>kiosk:scan</code> instead — subscribe to that for HID barcode/QR scans.</td>
+    </tr>
+    <tr>
+      <td>Camera page opens but shows black screen + warning icon</td>
+      <td>Google Play Services not installed (required by Google ML Kit)</td>
+      <td>Use the <a href="#hid-scan">HID barcode scanner</a> instead, or install Play Services on the kiosk (usually not possible on industrial Android builds).</td>
+    </tr>
+    <tr>
+      <td>OTA fails with "self signed certificate in certificate chain"</td>
+      <td>Cloudflare / Firebase rotated their TLS cert to a CA the kiosk's old Android trust store doesn't have (typically Google Trust Services R1/R4)</td>
+      <td>Install wrapper v1.0.12+ — it bundles the missing roots into both Android's network_security_config and Dart's SecurityContext.</td>
     </tr>
   </tbody>
 </table>
